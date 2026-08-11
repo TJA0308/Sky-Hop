@@ -315,9 +315,9 @@ function buildLevel6() {
     checkpoint: { x: 64, y: 10 },
     hint: 'Ride the drifters — time your jumps!',
     movingPlatforms: [
-      { x: 20, y: 11, distance: 3, axis: 'x', speed: 45 },
-      { x: 48, y: 10, distance: 4, axis: 'x', speed: 50 },
-      { x: 76, y: 10, distance: 4, axis: 'x', speed: 48 },
+      { x: 19, y: 11, distance: 2, axis: 'x', speed: 45 },
+      { x: 47, y: 10, distance: 3, axis: 'x', speed: 50 },
+      { x: 80, y: 10, distance: 3, axis: 'x', speed: 48 },
     ],
     stars: [
       [4, 11], [8, 11], [14, 11],
@@ -364,6 +364,7 @@ function buildLevel7() {
     goal: { x: 126, y: 11 },
     checkpoint: null,
     hint: 'Stomp Wisps from above only!',
+    powerUps: [{ x: 14, y: 12, type: 'doubleJump' }],
     stars: [
       [4, 12], [8, 12], [12, 12],
       [28, 10], [32, 10], [36, 10],
