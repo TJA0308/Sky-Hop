@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { LEVELS } from '../utils/constants.js';
 
 const PALETTE = {
   skyDeep: 0x1a0a2e,
@@ -18,12 +19,17 @@ const PALETTE = {
   puffling: 0x8866cc,
   pufflingDark: 0x6644aa,
   pufflingLight: 0xaa88ee,
+  wisp: 0x44ccff,
+  wispDark: 0x2288cc,
+  wispLight: 0xaaeeff,
   star: 0xffcc00,
   starLight: 0xffffaa,
   spike: 0xcccccc,
   spikeDark: 0x888888,
   flag: 0xff4466,
   flagPole: 0xdddddd,
+  powerup: 0xff88ff,
+  powerupLight: 0xffccff,
   white: 0xffffff,
   black: 0x111111,
 };
@@ -34,19 +40,64 @@ export default class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.json('level1', 'assets/tilemaps/level1.json');
-    this.load.json('level2', 'assets/tilemaps/level2.json');
+    const w = this.scale.width;
+    const h = this.scale.height;
+
+    this.loadingBg = this.add.rectangle(w / 2, h / 2, w, h, PALETTE.skyDeep);
+    this.loadingText = this.add
+      .text(w / 2, h / 2 - 30, 'SKY HOP', {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '16px',
+        color: '#ffcc44',
+      })
+      .setOrigin(0.5);
+    this.loadingLabel = this.add
+      .text(w / 2, h / 2 + 10, 'Loading...', {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '7px',
+        color: '#ffaa88',
+      })
+      .setOrigin(0.5);
+    this.progressBarBg = this.add.rectangle(w / 2, h / 2 + 40, 200, 12, 0x333333);
+    this.progressBar = this.add.rectangle(w / 2 - 98, h / 2 + 40, 4, 8, PALETTE.star).setOrigin(0, 0.5);
+
+    LEVELS.forEach((key) => {
+      this.load.json(key, `assets/tilemaps/${key}.json`);
+    });
+
+    this.load.on('progress', (value) => {
+      this.progressBar.width = 196 * value;
+      this.loadingLabel.setText(`Loading levels... ${Math.floor(value * 100)}%`);
+    });
   }
 
   create() {
-    this.generateTileset();
-    this.generatePlayerSheet();
-    this.generatePufflingSheet();
-    this.generateStarSheet();
-    this.generateFlag();
-    this.generateParallax();
-    this.createAnimations();
-    this.scene.start('MenuScene');
+    const steps = [
+      { label: 'Generating tileset...', fn: () => this.generateTileset() },
+      { label: 'Generating player...', fn: () => this.generatePlayerSheet() },
+      { label: 'Generating enemies...', fn: () => this.generateEnemySheets() },
+      { label: 'Generating items...', fn: () => this.generateItemSheets() },
+      { label: 'Generating backgrounds...', fn: () => this.generateParallax() },
+      { label: 'Creating animations...', fn: () => this.createAnimations() },
+    ];
+
+    let step = 0;
+    const runStep = () => {
+      if (step >= steps.length) {
+        this.cameras.main.fadeOut(400, 26, 10, 46);
+        this.time.delayedCall(400, () => {
+          this.scene.start('MenuScene');
+        });
+        return;
+      }
+      const s = steps[step];
+      this.loadingLabel.setText(s.label);
+      this.progressBar.width = 196 * ((step + 1) / steps.length);
+      s.fn();
+      step++;
+      this.time.delayedCall(50, runStep);
+    };
+    runStep();
   }
 
   generateTileset() {
@@ -54,8 +105,6 @@ export default class BootScene extends Phaser.Scene {
     const cols = 4;
     const g = this.make.graphics({ x: 0, y: 0, add: false });
 
-    // Tile 0: empty (transparent)
-    // Tile 1: grass platform
     g.fillStyle(PALETTE.grassDark);
     g.fillRect(0, ts, ts, ts);
     g.fillStyle(PALETTE.grass);
@@ -66,7 +115,6 @@ export default class BootScene extends Phaser.Scene {
       g.fillRect(x, 1, 2, 2);
     }
 
-    // Tile 2: stone
     g.fillStyle(PALETTE.stoneDark);
     g.fillRect(ts, 0, ts, ts);
     g.fillStyle(PALETTE.stone);
@@ -75,7 +123,6 @@ export default class BootScene extends Phaser.Scene {
     g.fillRect(ts + 1, 9, 6, 6);
     g.fillRect(ts + 9, 9, 6, 6);
 
-    // Tile 3: spike
     g.fillStyle(PALETTE.spikeDark);
     g.fillRect(ts * 2, ts - 4, ts, 4);
     for (let x = 0; x < ts; x += 4) {
@@ -83,7 +130,6 @@ export default class BootScene extends Phaser.Scene {
       g.fillTriangle(ts * 2 + x, ts - 4, ts * 2 + x + 2, ts - 12, ts * 2 + x + 4, ts - 4);
     }
 
-    // Tile 4: checkpoint flag tile (small)
     g.fillStyle(PALETTE.flagPole);
     g.fillRect(ts * 3 + 4, 2, 2, ts - 2);
     g.fillStyle(PALETTE.star);
@@ -100,33 +146,27 @@ export default class BootScene extends Phaser.Scene {
     const g = this.make.graphics({ x: 0, y: 0, add: false });
 
     const drawPlayer = (ox, oy, legOffset = 0) => {
-      // Body
       g.fillStyle(PALETTE.playerDark);
       g.fillRect(ox + 4, oy + 6, 8, 7);
       g.fillStyle(PALETTE.player);
       g.fillRect(ox + 5, oy + 7, 6, 5);
-      // Head
       g.fillStyle(PALETTE.playerLight);
       g.fillRect(ox + 4, oy + 2, 8, 5);
       g.fillStyle(PALETTE.black);
       g.fillRect(ox + 6, oy + 4, 2, 2);
       g.fillRect(ox + 9, oy + 4, 2, 2);
-      // Legs
       g.fillStyle(PALETTE.playerDark);
       g.fillRect(ox + 5 + legOffset, oy + 13, 2, 3);
       g.fillRect(ox + 9 - legOffset, oy + 13, 2, 3);
-      // Backpack
       g.fillStyle(PALETTE.skyWarm);
       g.fillRect(ox + 3, oy + 7, 2, 4);
     };
 
-    // idle (frame 0)
     drawPlayer(0, 0, 0);
-    // run frames 1-3
     drawPlayer(fw, 0, 1);
     drawPlayer(fw * 2, 0, 0);
     drawPlayer(fw * 3, 0, -1);
-    // jump (frame 4)
+
     g.fillStyle(PALETTE.playerDark);
     g.fillRect(fw * 4 + 4, 4 + 6, 8, 5);
     g.fillStyle(PALETTE.player);
@@ -139,7 +179,7 @@ export default class BootScene extends Phaser.Scene {
     g.fillStyle(PALETTE.playerDark);
     g.fillRect(fw * 4 + 4, 4 + 11, 3, 2);
     g.fillRect(fw * 4 + 9, 4 + 11, 3, 2);
-    // fall/hurt (frame 5)
+
     g.fillStyle(PALETTE.playerDark);
     g.fillRect(fw * 5 + 3, 2 + 6, 10, 5);
     g.fillStyle(PALETTE.playerLight);
@@ -153,7 +193,7 @@ export default class BootScene extends Phaser.Scene {
     this.addTextureFrames('player', fw, fh, frames);
   }
 
-  generatePufflingSheet() {
+  generateEnemySheets() {
     const fw = 16;
     const fh = 16;
     const g = this.make.graphics({ x: 0, y: 0, add: false });
@@ -184,9 +224,27 @@ export default class BootScene extends Phaser.Scene {
     g.generateTexture('puffling', fw * 3, fh);
     g.destroy();
     this.addTextureFrames('puffling', fw, fh, 3);
+
+    const wg = this.make.graphics({ x: 0, y: 0, add: false });
+    for (let f = 0; f < 2; f++) {
+      const ox = f * fw;
+      const bob = f === 1 ? 1 : 0;
+      wg.fillStyle(PALETTE.wispDark);
+      wg.fillEllipse(ox + 8, 8 + bob, 10, 12);
+      wg.fillStyle(PALETTE.wisp);
+      wg.fillEllipse(ox + 8, 7 + bob, 8, 10);
+      wg.fillStyle(PALETTE.wispLight);
+      wg.fillRect(ox + 5, 4 + bob, 2, 2);
+      wg.fillRect(ox + 10, 4 + bob, 2, 2);
+      wg.fillStyle(PALETTE.wispLight, 0.5);
+      wg.fillEllipse(ox + 8, 12 + bob, 6, 4);
+    }
+    wg.generateTexture('wisp', fw * 2, fh);
+    wg.destroy();
+    this.addTextureFrames('wisp', fw, fh, 2);
   }
 
-  generateStarSheet() {
+  generateItemSheets() {
     const fw = 16;
     const fh = 16;
     const g = this.make.graphics({ x: 0, y: 0, add: false });
@@ -212,24 +270,41 @@ export default class BootScene extends Phaser.Scene {
       g.fillStyle(PALETTE.starLight);
       g.fillRect(ox + 7, 6, 2, 2);
     }
-
     g.generateTexture('star', fw * 4, fh);
     g.destroy();
     this.addTextureFrames('star', fw, fh, 4);
-  }
 
-  generateFlag() {
-    const g = this.make.graphics({ x: 0, y: 0, add: false });
-    g.fillStyle(PALETTE.flagPole);
-    g.fillRect(2, 0, 3, 32);
-    g.fillStyle(PALETTE.flag);
-    g.fillRect(5, 2, 18, 12);
-    g.fillStyle(PALETTE.star);
-    g.fillRect(10, 5, 4, 4);
-    g.fillStyle(PALETTE.white);
-    g.fillRect(5, 2, 18, 2);
-    g.generateTexture('goal-flag', 24, 32);
-    g.destroy();
+    const pg = this.make.graphics({ x: 0, y: 0, add: false });
+    pg.fillStyle(PALETTE.powerup);
+    pg.fillCircle(8, 8, 7);
+    pg.fillStyle(PALETTE.powerupLight);
+    pg.fillCircle(8, 8, 4);
+    pg.fillStyle(PALETTE.white);
+    pg.fillRect(6, 6, 4, 4);
+    pg.generateTexture('powerup', 16, 16);
+    pg.destroy();
+
+    const mg = this.make.graphics({ x: 0, y: 0, add: false });
+    mg.fillStyle(PALETTE.grassDark);
+    mg.fillRect(0, 8, 16, 8);
+    mg.fillStyle(PALETTE.grass);
+    mg.fillRect(0, 4, 16, 6);
+    mg.fillStyle(PALETTE.stoneDark);
+    mg.fillRect(0, 12, 16, 4);
+    mg.generateTexture('moving-platform', 16, 16);
+    mg.destroy();
+
+    const fg = this.make.graphics({ x: 0, y: 0, add: false });
+    fg.fillStyle(PALETTE.flagPole);
+    fg.fillRect(2, 0, 3, 32);
+    fg.fillStyle(PALETTE.flag);
+    fg.fillRect(5, 2, 18, 12);
+    fg.fillStyle(PALETTE.star);
+    fg.fillRect(10, 5, 4, 4);
+    fg.fillStyle(PALETTE.white);
+    fg.fillRect(5, 2, 18, 2);
+    fg.generateTexture('goal-flag', 24, 32);
+    fg.destroy();
 
     const cg = this.make.graphics({ x: 0, y: 0, add: false });
     cg.fillStyle(PALETTE.flagPole);
@@ -329,6 +404,12 @@ export default class BootScene extends Phaser.Scene {
       key: 'puffling-squish',
       frames: [{ key: 'puffling', frame: 2 }],
       frameRate: 1,
+    });
+    this.anims.create({
+      key: 'wisp-float',
+      frames: this.anims.generateFrameNumbers('wisp', { start: 0, end: 1 }),
+      frameRate: 3,
+      repeat: -1,
     });
     this.anims.create({
       key: 'star-spin',

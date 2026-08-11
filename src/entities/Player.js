@@ -29,6 +29,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpBufferTimer = 0;
     this.isDead = false;
     this.invuln = false;
+    this.hasDoubleJump = false;
+    this.doubleJumpUsed = false;
+    this.ridingPlatform = null;
+    this.wasJumpHeld = false;
 
     this.cursors = scene.input.keyboard.createCursorKeys();
     this.keys = scene.input.keyboard.addKeys({
@@ -41,13 +45,38 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.play('player-idle');
   }
 
+  grantDoubleJump() {
+    this.hasDoubleJump = true;
+    this.doubleJumpUsed = false;
+  }
+
+  updateRidingPlatform() {
+    this.ridingPlatform = null;
+    if (!this.body.touching.down || !this.scene.movingPlatforms) return;
+
+    this.scene.movingPlatforms.children.iterate((platform) => {
+      if (!platform.active || this.ridingPlatform) return;
+      if (!platform.body.touching.up) return;
+
+      const playerBottom = this.body.bottom;
+      const platformTop = platform.body.top;
+      if (playerBottom >= platformTop - 4 && playerBottom <= platformTop + 8) {
+        this.ridingPlatform = platform;
+      }
+    });
+  }
+
   preUpdate(time, delta) {
     super.preUpdate(time, delta);
     if (this.isDead) return;
 
+    this.updateRidingPlatform();
+
     const onGround = this.body.blocked.down || this.body.touching.down;
+    const platformVx = this.ridingPlatform?.body.velocity.x ?? 0;
     if (onGround) {
       this.coyoteTimer = COYOTE_TIME;
+      this.doubleJumpUsed = false;
     } else {
       this.coyoteTimer = Math.max(0, this.coyoteTimer - delta);
     }
@@ -69,26 +98,41 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (left) {
-      this.setVelocityX(-PLAYER_SPEED);
+      this.setVelocityX(platformVx - PLAYER_SPEED);
       this.facing = -1;
       this.setFlipX(true);
     } else if (right) {
-      this.setVelocityX(PLAYER_SPEED);
+      this.setVelocityX(platformVx + PLAYER_SPEED);
       this.facing = 1;
       this.setFlipX(false);
     } else {
-      this.setVelocityX(0);
+      this.setVelocityX(platformVx);
     }
 
-    if (this.jumpBufferTimer > 0 && this.coyoteTimer > 0) {
-      this.setVelocityY(JUMP_VELOCITY);
-      this.coyoteTimer = 0;
-      this.jumpBufferTimer = 0;
-      this.scene.sfx?.play('jump');
+    if (this.jumpBufferTimer > 0) {
+      if (this.coyoteTimer > 0) {
+        this.setVelocityY(JUMP_VELOCITY);
+        this.coyoteTimer = 0;
+        this.jumpBufferTimer = 0;
+        this.scene.sfx?.play('jump');
+      } else if (this.hasDoubleJump && !this.doubleJumpUsed && !onGround) {
+        this.setVelocityY(JUMP_VELOCITY * 0.9);
+        this.doubleJumpUsed = true;
+        this.jumpBufferTimer = 0;
+        this.scene.sfx?.play('jump');
+      }
     }
 
-    if (!jumpHeld && this.body.velocity.y < 0) {
+    if (this.wasJumpHeld && !jumpHeld && this.body.velocity.y < 0) {
       this.setVelocityY(this.body.velocity.y * JUMP_CUT_MULTIPLIER);
+    }
+    this.wasJumpHeld = jumpHeld;
+
+    if (this.ridingPlatform && this.body.touching.down && this.body.velocity.y >= 0) {
+      const platformVy = this.ridingPlatform.body.velocity.y;
+      if (platformVy !== 0) {
+        this.setVelocityY(platformVy);
+      }
     }
 
     if (!onGround) {
@@ -106,6 +150,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   stompBounce() {
     this.setVelocityY(STOMP_BOUNCE);
+    this.doubleJumpUsed = false;
   }
 
   hurt() {
@@ -128,11 +173,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   respawn(x, y) {
     this.isDead = false;
-    this.invuln = false;
     this.clearTint();
     this.setPosition(x, y);
     this.setVelocity(0, 0);
     this.setAlpha(1);
+    this.doubleJumpUsed = false;
     this.play('player-idle');
+    this.invuln = true;
+    this.scene.time.delayedCall(INVULN_TIME, () => {
+      this.invuln = false;
+    });
   }
 }

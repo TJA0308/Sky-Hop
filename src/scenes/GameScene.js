@@ -1,13 +1,16 @@
 import Phaser from 'phaser';
 import Player from '../entities/Player.js';
 import Puffling from '../entities/Puffling.js';
+import Wisp from '../entities/Wisp.js';
+import MovingPlatform from '../entities/MovingPlatform.js';
+import PowerUp from '../entities/PowerUp.js';
 import Sfx from '../utils/sfx.js';
+import { hasVisitedLevel } from '../utils/SaveManager.js';
 import {
   TILE_SIZE,
   TILE,
   MAX_LIVES,
   STAR_SCORE,
-  GAME_HEIGHT,
   LEVELS,
 } from '../utils/constants.js';
 
@@ -24,9 +27,11 @@ export default class GameScene extends Phaser.Scene {
     this.isPaused = false;
     this.levelComplete = false;
     this.checkpoint = null;
+    this.fromMap = data.fromMap ?? true;
   }
 
   create() {
+    this.cameras.main.fadeIn(400, 26, 10, 46);
     this.sfx = new Sfx(this);
     const levelKey = LEVELS[this.levelIndex];
     this.levelData = this.cache.json.get(levelKey);
@@ -37,6 +42,7 @@ export default class GameScene extends Phaser.Scene {
     this.setupCollisions();
     this.setupCamera();
     this.setupInput();
+    this.setupPauseMenu();
 
     this.events.emit('updateHUD', {
       lives: this.lives,
@@ -45,6 +51,47 @@ export default class GameScene extends Phaser.Scene {
       starsTotal: this.levelData.stars.length,
       levelName: this.levelData.name,
       levelIndex: this.levelIndex,
+    });
+
+    this.showLevelIntro();
+  }
+
+  showLevelIntro() {
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const hint = this.levelData.hint || '';
+    const firstVisit = !hasVisitedLevel(this.levelIndex);
+
+    const banner = this.add.container(w / 2, h / 2).setScrollFactor(0).setDepth(50);
+    const bg = this.add.rectangle(0, 0, w, 60, 0x1a0a2e, 0.85);
+    const title = this.add
+      .text(0, -8, this.levelData.name, {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '10px',
+        color: '#ffcc44',
+      })
+      .setOrigin(0.5);
+    banner.add([bg, title]);
+
+    if (firstVisit && hint) {
+      const hintText = this.add
+        .text(0, 14, hint, {
+          fontFamily: '"Press Start 2P", monospace',
+          fontSize: '6px',
+          color: '#ffaa88',
+        })
+        .setOrigin(0.5);
+      banner.add(hintText);
+    }
+
+    banner.setAlpha(0);
+    this.tweens.add({
+      targets: banner,
+      alpha: 1,
+      duration: 300,
+      hold: firstVisit && hint ? 1200 : 800,
+      yoyo: true,
+      onComplete: () => banner.destroy(),
     });
   }
 
@@ -100,16 +147,29 @@ export default class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, d.spawn.x * TILE_SIZE + TILE_SIZE / 2, d.spawn.y * TILE_SIZE + TILE_SIZE / 2);
 
+    this.movingPlatforms = this.add.group();
+    (d.movingPlatforms || []).forEach((mp) => {
+      const platform = new MovingPlatform(this, mp.x, mp.y, mp.distance, mp.axis, mp.speed);
+      this.movingPlatforms.add(platform);
+    });
+
     this.enemies = this.add.group();
     d.enemies.forEach((e) => {
-      const puff = new Puffling(
-        this,
-        e.x * TILE_SIZE + TILE_SIZE / 2,
-        e.y * TILE_SIZE + TILE_SIZE / 2,
-        e.x * TILE_SIZE,
-        (e.x + e.patrol) * TILE_SIZE
-      );
-      this.enemies.add(puff);
+      const ex = e.x * TILE_SIZE + TILE_SIZE / 2;
+      const ey = e.y * TILE_SIZE + TILE_SIZE / 2;
+      if (e.type === 'wisp') {
+        const wisp = new Wisp(this, ex, ey, e.patrol || 3);
+        this.enemies.add(wisp);
+      } else {
+        const puff = new Puffling(this, ex, ey, e.x * TILE_SIZE, (e.x + e.patrol) * TILE_SIZE);
+        this.enemies.add(puff);
+      }
+    });
+
+    this.powerUps = this.add.group();
+    (d.powerUps || []).forEach((pu) => {
+      const powerUp = new PowerUp(this, pu.x, pu.y, pu.type);
+      this.powerUps.add(powerUp);
     });
 
     this.stars = this.add.group();
@@ -150,10 +210,16 @@ export default class GameScene extends Phaser.Scene {
   setupCollisions() {
     this.physics.add.collider(this.player, this.groundLayer);
     this.physics.add.collider(this.enemies, this.groundLayer);
+    this.physics.add.collider(this.enemies, this.movingPlatforms);
+
+    this.movingPlatforms.children.iterate((platform) => {
+      this.physics.add.collider(this.player, platform);
+    });
 
     this.physics.add.overlap(this.player, this.enemies, this.handleEnemyOverlap, null, this);
     this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
     this.physics.add.overlap(this.player, this.goalFlag, this.reachGoal, null, this);
+    this.physics.add.overlap(this.player, this.powerUps, this.collectPowerUp, null, this);
   }
 
   setupCamera() {
@@ -163,35 +229,184 @@ export default class GameScene extends Phaser.Scene {
 
   setupInput() {
     this.restartKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+    this.pauseKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.pauseKeyP = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+  }
+
+  setupPauseMenu() {
+    this.pauseOverlay = null;
+    this.pauseContainer = null;
+  }
+
+  togglePause() {
+    if (this.levelComplete || this.player.isDead) return;
+
+    this.isPaused = !this.isPaused;
+    if (this.isPaused) {
+      this.physics.pause();
+      this.showPauseMenu();
+    } else {
+      this.physics.resume();
+      this.hidePauseMenu();
+    }
+  }
+
+  showPauseMenu() {
+    const w = this.scale.width;
+    const h = this.scale.height;
+
+    this.pauseOverlay = this.add.rectangle(w / 2, h / 2, w, h, 0x1a0a2e, 0.8).setScrollFactor(0).setDepth(90);
+    this.pauseContainer = this.add.container(w / 2, h / 2).setScrollFactor(0).setDepth(91);
+
+    const title = this.add
+      .text(0, -60, 'PAUSED', {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '14px',
+        color: '#ffcc44',
+      })
+      .setOrigin(0.5);
+
+    const items = [
+      { label: 'Resume (Esc/P)', action: () => this.togglePause() },
+      { label: 'Restart Level', action: () => this.restartLevel() },
+      { label: 'Quit to Map', action: () => this.quitToMap() },
+    ];
+
+    this.pauseContainer.add(title);
+    items.forEach((item, i) => {
+      const txt = this.add
+        .text(0, -10 + i * 28, item.label, {
+          fontFamily: '"Press Start 2P", monospace',
+          fontSize: '8px',
+          color: '#ffffff',
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: false });
+      txt.on('pointerover', () => txt.setColor('#ffaa88'));
+      txt.on('pointerout', () => txt.setColor('#ffffff'));
+      txt.on('pointerdown', item.action);
+      this.pauseContainer.add(txt);
+    });
+
+    const controls = this.add
+      .text(0, 80, '← → Move   SPACE Jump   F Fullscreen', {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '5px',
+        color: '#ccaaee',
+      })
+      .setOrigin(0.5);
+    this.pauseContainer.add(controls);
+  }
+
+  hidePauseMenu() {
+    if (this.pauseOverlay) this.pauseOverlay.destroy();
+    if (this.pauseContainer) this.pauseContainer.destroy();
+    this.pauseOverlay = null;
+    this.pauseContainer = null;
+  }
+
+  restartLevel() {
+    this.hidePauseMenu();
+    this.isPaused = false;
+    this.physics.resume();
+    this.scene.restart({ levelIndex: this.levelIndex, score: this.score, lives: this.lives, fromMap: this.fromMap });
+  }
+
+  quitToMap() {
+    this.hidePauseMenu();
+    this.isPaused = false;
+    this.physics.resume();
+    this.cameras.main.fadeOut(300, 26, 10, 46);
+    this.time.delayedCall(300, () => {
+      this.scene.stop('UIScene');
+      this.scene.start('WorldMapScene');
+    });
   }
 
   handleEnemyOverlap(player, enemy) {
-    if (enemy.isSquished || player.isDead || this.levelComplete) return;
+    if (enemy.isSquished || player.isDead || this.levelComplete || this.isPaused) return;
 
     const playerBottom = player.y + player.body.height / 2;
     const enemyTop = enemy.y - enemy.body.height / 2;
 
-    if (player.body.velocity.y > 0 && playerBottom <= enemyTop + 8) {
+    if (player.body.velocity.y > 0 && playerBottom <= enemyTop + 10) {
       enemy.squish();
       player.stompBounce();
       this.score += 50;
+      this.showScorePopup(player.x, player.y - 20, '+50');
       this.updateHUD();
-    } else if (player.hurt()) {
-      this.loseLife();
+    } else if (this.takeDamage()) {
+      // side/bottom hit
     }
   }
 
   collectStar(player, star) {
-    if (!star.active) return;
+    if (!star.active || this.isPaused) return;
+    const sx = star.x;
+    const sy = star.y;
     star.destroy();
     this.starsCollected++;
     this.score += STAR_SCORE;
+    this.showScorePopup(sx, sy - 10, `+${STAR_SCORE}`);
     this.sfx.play('coin');
     this.updateHUD();
   }
 
+  collectPowerUp(player, powerUp) {
+    if (!powerUp.active || powerUp.collected || this.isPaused) return;
+    if (powerUp.type === 'doubleJump') {
+      player.grantDoubleJump();
+      this.sfx.play('powerup');
+      this.events.emit('powerUpCollected', { type: 'doubleJump' });
+    }
+    powerUp.collect();
+  }
+
+  showScorePopup(x, y, text) {
+    const popup = this.add
+      .text(x, y, text, {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '7px',
+        color: '#ffcc44',
+        stroke: '#1a0a2e',
+        strokeThickness: 2,
+      })
+      .setOrigin(0.5)
+      .setDepth(50);
+    this.tweens.add({
+      targets: popup,
+      y: y - 24,
+      alpha: 0,
+      duration: 700,
+      onComplete: () => popup.destroy(),
+    });
+  }
+
+  showToast(message) {
+    const w = this.scale.width;
+    const toast = this.add
+      .text(w / 2, 50, message, {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '8px',
+        color: '#ffcc44',
+        stroke: '#1a0a2e',
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(95);
+    this.tweens.add({
+      targets: toast,
+      alpha: 0,
+      y: 40,
+      duration: 1200,
+      delay: 400,
+      onComplete: () => toast.destroy(),
+    });
+  }
+
   reachGoal() {
-    if (this.levelComplete || this.player.isDead) return;
+    if (this.levelComplete || this.player.isDead || this.isPaused) return;
     this.levelComplete = true;
     this.player.setVelocity(0, 0);
     this.sfx.play('win');
@@ -206,17 +421,27 @@ export default class GameScene extends Phaser.Scene {
   }
 
   loseLife() {
+    if (this.player.isDead || this.levelComplete) return;
     this.lives--;
     this.updateHUD();
 
     if (this.lives <= 0) {
       this.player.die();
       this.time.delayedCall(800, () => {
-        this.events.emit('gameOver', { score: this.score });
+        this.events.emit('gameOver', { score: this.score, levelIndex: this.levelIndex });
       });
     } else {
       this.respawnPlayer();
     }
+  }
+
+  takeDamage() {
+    if (this.levelComplete || this.player.isDead || this.player.invuln) return false;
+    if (this.player.hurt()) {
+      this.loseLife();
+      return true;
+    }
+    return false;
   }
 
   respawnPlayer() {
@@ -241,46 +466,41 @@ export default class GameScene extends Phaser.Scene {
   update(time, delta) {
     if (this.levelComplete) return;
 
-    if (Phaser.Input.Keyboard.JustDown(this.restartKey)) {
-      this.scene.restart({ levelIndex: this.levelIndex, score: this.score, lives: this.lives });
+    if (
+      Phaser.Input.Keyboard.JustDown(this.pauseKey) ||
+      Phaser.Input.Keyboard.JustDown(this.pauseKeyP)
+    ) {
+      this.togglePause();
       return;
     }
 
-    // Parallax scroll
+    if (this.isPaused) return;
+
+    if (Phaser.Input.Keyboard.JustDown(this.restartKey)) {
+      this.scene.restart({ levelIndex: this.levelIndex, score: this.score, lives: this.lives, fromMap: this.fromMap });
+      return;
+    }
+
     const scrollX = this.cameras.main.scrollX;
     this.bgClouds.tilePositionX = scrollX * 0.2;
     this.bgIslands.tilePositionX = scrollX * 0.4;
     this.bgMist.tilePositionX = scrollX * 0.6;
 
-    // Pit death
-    if (this.player.y > this.levelData.height * TILE_SIZE + 32 && !this.player.isDead) {
-      this.lives--;
-      this.updateHUD();
-      if (this.lives <= 0) {
-        this.player.die();
-        this.time.delayedCall(800, () => {
-          this.events.emit('gameOver', { score: this.score });
-        });
-      } else {
-        this.respawnPlayer();
-      }
+    if (this.player.y > this.levelData.height * TILE_SIZE + 32) {
+      this.takeDamage();
     }
 
-    // Spike overlap
     if (!this.player.invuln && !this.player.isDead) {
       for (const spike of this.spikeTiles) {
         const dx = Math.abs(this.player.x - spike.x);
         const dy = Math.abs(this.player.y - spike.y);
         if (dx < 10 && dy < 10) {
-          if (this.player.hurt()) {
-            this.loseLife();
-          }
+          this.takeDamage();
           break;
         }
       }
     }
 
-    // Checkpoint
     if (this.levelData.checkpoint && !this.checkpoint) {
       const cp = this.levelData.checkpoint;
       const cpx = cp.x * TILE_SIZE + TILE_SIZE / 2;
@@ -288,6 +508,7 @@ export default class GameScene extends Phaser.Scene {
       if (Math.abs(this.player.x - cpx) < 20 && Math.abs(this.player.y - cpy) < 40) {
         this.checkpoint = cp;
         this.sfx.play('coin');
+        this.showToast('Checkpoint!');
       }
     }
   }

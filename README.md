@@ -1,11 +1,20 @@
 # Sky Hop
 
-A browser pixel-platformer demo built with **Phaser 3** and **Vite**. Hop across floating sunset sky-islands, stomp Pufflings, collect golden stars, and reach the flag!
+[![Play Now](https://img.shields.io/badge/Play-Now-ff6644?style=for-the-badge)](https://YOUR_USERNAME.github.io/Cursor-Demo/)
 
-## Quick start
+A browser pixel-platformer built with **Phaser 3** and **Vite**. Hop across floating sunset sky-islands across **10 levels**, stomp Pufflings and Wisps, ride moving platforms, grab double-jump power-ups, and reach the Sunset Summit!
+
+## Play Now
+
+**[▶ Play Sky Hop](https://YOUR_USERNAME.github.io/Cursor-Demo/)** — no install required, runs in any modern browser.
+
+> Replace `YOUR_USERNAME` with your GitHub username after enabling GitHub Pages (Settings → Pages → source: `gh-pages` branch).
+
+## Quick start (local)
 
 ```bash
 npm install
+node scripts/generate-levels.mjs
 npm run dev
 ```
 
@@ -14,6 +23,7 @@ Open the URL shown in the terminal (usually `http://localhost:5173`).
 ## Build for production
 
 ```bash
+node scripts/generate-levels.mjs
 npm run build
 ```
 
@@ -29,56 +39,27 @@ npm run preview
 |-----|--------|
 | ← → or A D | Move |
 | Space / W / ↑ | Jump (hold for higher jump) |
-| Enter | Start / continue |
-| R | Restart level (after death) |
+| Enter | Start / confirm |
+| Esc / P | Pause menu |
+| R | Restart level |
+| ↑ ↓ | Menu / world map navigation |
+
+## Features
+
+- **10 levels** across 3 sunset zones with a difficulty curve
+- **World map** with unlock progression and star ratings (1–3 ★)
+- **Save progress** via localStorage (unlocks, stars, best scores)
+- **New mechanics**: moving platforms, double-jump power-ups, Wisp enemies
+- **Pause menu**, settings (mute), level intro hints, credits / how-to-play
+- **Auto-deploy** to GitHub Pages on push to `main`/`master`
 
 ## Deploy
 
-The game is a static site — deploy the `dist/` folder to any static host.
+GitHub Actions workflow (`.github/workflows/deploy.yml`) builds and publishes `dist/` to the `gh-pages` branch automatically.
 
-### GitHub Pages
-
-1. Build: `npm run build`
-2. Push `dist/` contents to a `gh-pages` branch, or use GitHub Actions:
-
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy
-on:
-  push:
-    branches: [main]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npm run build
-      - uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-```
-
-3. Enable GitHub Pages from the `gh-pages` branch in repo Settings → Pages.
-
-### Netlify
-
-1. Connect your repo at [netlify.com](https://netlify.com)
-2. Build command: `npm run build`
-3. Publish directory: `dist`
-4. Deploy — Netlify auto-detects Vite projects.
-
-Or drag-and-drop the `dist/` folder into the Netlify dashboard.
-
-### Vercel
-
-1. Import the repo at [vercel.com](https://vercel.com)
-2. Framework preset: Vite
-3. Deploy — no extra config needed.
+1. Push to `main` or `master`
+2. Enable GitHub Pages: repo **Settings → Pages →** source: **`gh-pages`** branch
+3. Your game will be live at `https://<username>.github.io/<repo>/`
 
 ## Project structure
 
@@ -86,13 +67,14 @@ Or drag-and-drop the `dist/` folder into the Netlify dashboard.
 ├── index.html
 ├── package.json
 ├── vite.config.js
-├── public/assets/tilemaps/   # Level JSON data
+├── .github/workflows/deploy.yml
+├── public/assets/tilemaps/   # Level JSON data (10 levels)
 ├── scripts/generate-levels.mjs
 └── src/
     ├── main.js
-    ├── scenes/               # Boot, Menu, Game, UI
-    ├── entities/             # Player, Puffling
-    └── utils/                # Constants, SFX
+    ├── scenes/               # Boot, Menu, WorldMap, Game, UI, Settings
+    ├── entities/             # Player, Puffling, Wisp, MovingPlatform, PowerUp
+    └── utils/                # Constants, SaveManager, SFX
 ```
 
 Pixel art sprites and tilesets are generated programmatically at boot time — no external art tools required.
@@ -102,6 +84,21 @@ Pixel art sprites and tilesets are generated programmatically at boot time — n
 ```bash
 node scripts/generate-levels.mjs
 ```
+
+## Levels
+
+| # | Name | Zone | New mechanic |
+|---|------|------|--------------|
+| 1 | First Steps | Sky Meadow | Basics |
+| 2 | Gap Runner | Sky Meadow | Wide gaps |
+| 3 | Spike Trail | Sky Meadow | Spikes + checkpoint |
+| 4 | Drift Platforms | Storm Pass | Moving platforms |
+| 5 | Double Jump | Storm Pass | Power-up |
+| 6 | Wind Crossing | Storm Pass | Combo challenge |
+| 7 | Wisp Hollow | Twilight Peaks | Wisp enemy |
+| 8 | Sky Fortress | Twilight Peaks | Mixed enemies |
+| 9 | Final Approach | Twilight Peaks | All mechanics |
+| 10 | Sunset Summit | Twilight Peaks | Finale |
 
 ## License
 

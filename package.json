@@ -4,8 +4,8 @@
   "description": "Sky Hop — a sunset sky-island pixel platformer demo",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "node scripts/generate-levels.mjs && vite",
+    "build": "node scripts/generate-levels.mjs && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
