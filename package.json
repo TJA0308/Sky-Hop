@@ -4,14 +4,21 @@
   "description": "Sky Hop — a sunset sky-island pixel platformer demo",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/generate-levels.mjs && vite",
-    "build": "node scripts/generate-levels.mjs && vite build",
-    "preview": "vite preview"
+    "dev": "node scripts/generate-levels.mjs && node scripts/validate-levels.mjs && vite",
+    "build": "node scripts/generate-levels.mjs && node scripts/validate-levels.mjs && vite build",
+    "preview": "vite preview",
+    "validate-levels": "node scripts/validate-levels.mjs",
+    "test": "vitest run",
+    "lint": "eslint ."
   },
   "dependencies": {
     "phaser": "^3.80.1"
   },
   "devDependencies": {
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^2.1.9",
+    "eslint": "^9.18.0",
+    "@eslint/js": "^9.18.0",
+    "globals": "^15.14.0"
   }
 }

@@ -452,8 +452,8 @@ function buildLevel9() {
   fillGround(tiles, groundY - 4, 30, 34);
   fillGround(tiles, groundY - 2, 44, 48);
   fillGround(tiles, groundY - 5, 56, 60);
-  fillGround(tiles, groundY - 3, 70, 74);
-  fillGround(tiles, groundY - 2, 84, 88);
+  fillGround(tiles, groundY - 3, 70, 76);
+  fillGround(tiles, groundY - 2, 84, 90);
   fillGround(tiles, groundY - 4, 98, 102);
   fillGround(tiles, groundY - 2, 112, 116);
   fillGround(tiles, groundY - 3, 124, 128);
