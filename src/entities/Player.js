@@ -81,15 +81,17 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.coyoteTimer = Math.max(0, this.coyoteTimer - delta);
     }
 
-    const left = this.cursors.left.isDown || this.keys.A.isDown;
-    const right = this.cursors.right.isDown || this.keys.D.isDown;
+    const touch = this.scene.touchControls;
+    const left = this.cursors.left.isDown || this.keys.A.isDown || (touch?.left ?? false);
+    const right = this.cursors.right.isDown || this.keys.D.isDown || (touch?.right ?? false);
     const jumpPressed =
       Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
       Phaser.Input.Keyboard.JustDown(this.keys.W) ||
-      Phaser.Input.Keyboard.JustDown(this.keys.SPACE);
+      Phaser.Input.Keyboard.JustDown(this.keys.SPACE) ||
+      (touch?.consumeJumpPress() ?? false);
 
     const jumpHeld =
-      this.cursors.up.isDown || this.keys.W.isDown || this.keys.SPACE.isDown;
+      this.cursors.up.isDown || this.keys.W.isDown || this.keys.SPACE.isDown || (touch?.jumpHeld ?? false);
 
     if (jumpPressed) {
       this.jumpBufferTimer = JUMP_BUFFER;

@@ -21,7 +21,11 @@ export default class UIScene extends Phaser.Scene {
   create() {
     const w = this.scale.width;
 
-    this.hudBg = this.add.rectangle(w / 2, 14, w, 28, 0x1a0a2e, 0.7).setScrollFactor(0).setDepth(100);
+    this.hudBg = this.add.graphics().setScrollFactor(0).setDepth(100);
+    this.hudBg.fillStyle(0x1a0a2e, 0.75);
+    this.hudBg.fillRoundedRect(4, 2, w - 8, 26, 6);
+    this.hudBg.lineStyle(1, 0xffcc44, 0.4);
+    this.hudBg.strokeRoundedRect(4, 2, w - 8, 26, 6);
 
     this.levelText = this.add
       .text(8, 8, '', {
@@ -32,15 +36,15 @@ export default class UIScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(101);
 
-    this.livesText = this.add
-      .text(w - 8, 8, '', {
-        fontFamily: '"Press Start 2P", monospace',
-        fontSize: '7px',
-        color: '#ff6644',
-      })
-      .setOrigin(1, 0)
-      .setScrollFactor(0)
-      .setDepth(101);
+    this.heartIcons = [];
+    for (let i = 0; i < MAX_LIVES; i++) {
+      const heart = this.add
+        .image(w - 10 - i * 15, 11, 'heart')
+        .setOrigin(1, 0.5)
+        .setScrollFactor(0)
+        .setDepth(101);
+      this.heartIcons.push(heart);
+    }
 
     this.scoreText = this.add
       .text(w / 2, 8, '', {
@@ -103,18 +107,36 @@ export default class UIScene extends Phaser.Scene {
   }
 
   onUpdateHUD(data) {
+    const scoreChanged = data.score !== this.score;
+    const starsChanged = data.starsCollected !== this.starsCollected;
+    const livesLost = data.lives < this.lives;
+
     this.lives = data.lives;
     this.score = data.score;
     this.starsCollected = data.starsCollected;
     this.starsTotal = data.starsTotal;
     this.levelName = data.levelName;
     if (data.levelIndex !== undefined) this.levelIndex = data.levelIndex;
+
     this.refreshHUD();
+    if (scoreChanged) this.pop(this.scoreText);
+    if (starsChanged) this.pop(this.starText);
+    if (livesLost) this.shakeHearts();
+  }
+
+  pop(target) {
+    this.tweens.add({ targets: target, scale: { from: 1.4, to: 1 }, duration: 220, ease: 'Back.easeOut' });
+  }
+
+  shakeHearts() {
+    this.heartIcons.forEach((h) => {
+      this.tweens.add({ targets: h, x: h.x - 3, duration: 60, yoyo: true, repeat: 2 });
+    });
   }
 
   refreshHUD() {
     this.levelText.setText(this.levelName);
-    this.livesText.setText(`♥ ${this.lives}`);
+    this.heartIcons.forEach((h, i) => h.setVisible(i < this.lives));
     this.scoreText.setText(`${this.score}`);
     this.starText.setText(`★ ${this.starsCollected}/${this.starsTotal}`);
     if (this.doubleJumpBadge) {

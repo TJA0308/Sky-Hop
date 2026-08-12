@@ -19,7 +19,7 @@ export default class MenuScene extends Phaser.Scene {
     this.add.image(w / 2, h / 2 - 20, 'bg-clouds-far').setScrollFactor(0).setAlpha(0.7).setDisplaySize(w, h);
     this.add.image(w / 2, h / 2, 'bg-islands').setScrollFactor(0).setAlpha(0.5).setDisplaySize(w, h);
 
-    this.add
+    const title = this.add
       .text(w / 2, 60, 'SKY HOP', {
         fontFamily: '"Press Start 2P", monospace',
         fontSize: '28px',
@@ -28,6 +28,14 @@ export default class MenuScene extends Phaser.Scene {
         strokeThickness: 4,
       })
       .setOrigin(0.5);
+    this.tweens.add({
+      targets: title,
+      y: title.y - 5,
+      duration: 1400,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
 
     this.add
       .text(w / 2, 100, 'Sunset Island Adventure', {
@@ -63,6 +71,15 @@ export default class MenuScene extends Phaser.Scene {
       this.menuTexts.push(txt);
     });
 
+    this.selectorMarker = this.add
+      .text(0, 0, '▸', {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '10px',
+        color: '#ffcc44',
+      })
+      .setOrigin(0.5);
+    this.refreshMenuHighlight();
+
     this.add
       .text(w / 2, h - 24, '↑ ↓ Select   ENTER — World Map', {
         fontFamily: '"Press Start 2P", monospace',
@@ -80,8 +97,18 @@ export default class MenuScene extends Phaser.Scene {
   refreshMenuHighlight() {
     this.menuTexts.forEach((txt, i) => {
       txt.setColor(i === this.selectedIndex ? '#ffffff' : '#aaaaaa');
-      txt.setScale(i === this.selectedIndex ? 1.05 : 1);
+      if (i !== this.selectedIndex) txt.setScale(1);
     });
+    const selected = this.menuTexts[this.selectedIndex];
+    if (selected && this.selectorMarker) {
+      this.selectorMarker.setPosition(selected.x - selected.width / 2 - 16, selected.y);
+      this.tweens.add({
+        targets: selected,
+        scale: { from: 1.15, to: 1 },
+        duration: 180,
+        ease: 'Back.easeOut',
+      });
+    }
   }
 
   moveMenu(dir) {

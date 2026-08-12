@@ -171,7 +171,17 @@ export default class WorldMapScene extends Phaser.Scene {
       .setOrigin(0.5);
     container.add(name);
 
-    this.nodes.push({ container, circle, index, unlocked });
+    circle.setInteractive(new Phaser.Geom.Circle(0, 0, 14), Phaser.Geom.Circle.Contains);
+    circle.on('pointerover', () => {
+      if (this.selectedIndex !== index) this.highlightNode(index);
+    });
+    circle.on('pointerdown', () => {
+      const wasSelected = this.selectedIndex === index;
+      this.highlightNode(index);
+      if (wasSelected) this.launchLevel();
+    });
+
+    this.nodes.push({ container, circle, index, unlocked, pulseTween: null });
   }
 
   createPreviewPanel() {
@@ -249,10 +259,23 @@ export default class WorldMapScene extends Phaser.Scene {
   highlightNode(index) {
     this.nodes.forEach((n) => {
       n.circle.setStrokeStyle(0);
+      if (n.pulseTween) {
+        n.pulseTween.stop();
+        n.pulseTween = null;
+      }
+      n.circle.setScale(1);
     });
     const node = this.nodes[index];
     if (node) {
       node.circle.setStrokeStyle(3, 0xffcc44);
+      node.pulseTween = this.tweens.add({
+        targets: node.circle,
+        scale: 1.12,
+        duration: 500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
     }
     this.selectedIndex = index;
     this.updatePreview();

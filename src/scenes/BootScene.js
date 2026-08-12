@@ -315,6 +315,27 @@ export default class BootScene extends Phaser.Scene {
     cg.fillRect(10, 4, 4, 4);
     cg.generateTexture('checkpoint-flag', 22, 32);
     cg.destroy();
+
+    // Tiny particle texture reused for all burst/juice effects (star collect,
+    // enemy stomp, power-up collect, goal reached).
+    const spg = this.make.graphics({ x: 0, y: 0, add: false });
+    spg.fillStyle(PALETTE.white);
+    spg.fillRect(0, 0, 4, 4);
+    spg.generateTexture('spark', 4, 4);
+    spg.destroy();
+
+    // HUD heart icon (replaces the plain "♥" text lives readout).
+    const hg = this.make.graphics({ x: 0, y: 0, add: false });
+    hg.fillStyle(PALETTE.flag);
+    hg.fillRect(0, 1, 5, 5);
+    hg.fillRect(7, 1, 5, 5);
+    hg.fillRect(0, 5, 12, 3);
+    hg.fillRect(1, 8, 10, 2);
+    hg.fillRect(2, 10, 8, 1);
+    hg.fillRect(3, 11, 6, 1);
+    hg.fillRect(5, 12, 2, 1);
+    hg.generateTexture('heart', 12, 13);
+    hg.destroy();
   }
 
   generateParallax() {

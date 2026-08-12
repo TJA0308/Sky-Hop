@@ -4,6 +4,7 @@ import Puffling from '../entities/Puffling.js';
 import Wisp from '../entities/Wisp.js';
 import MovingPlatform from '../entities/MovingPlatform.js';
 import PowerUp from '../entities/PowerUp.js';
+import TouchControls from '../entities/TouchControls.js';
 import Sfx from '../utils/sfx.js';
 import { hasVisitedLevel } from '../utils/SaveManager.js';
 import {
@@ -43,6 +44,7 @@ export default class GameScene extends Phaser.Scene {
     this.setupCamera();
     this.setupInput();
     this.setupPauseMenu();
+    this.setupTouchControls();
 
     this.events.emit('updateHUD', {
       lives: this.lives,
@@ -238,6 +240,27 @@ export default class GameScene extends Phaser.Scene {
     this.pauseContainer = null;
   }
 
+  setupTouchControls() {
+    this.touchControls = null;
+    if (this.sys.game.device.input.touch) {
+      this.touchControls = new TouchControls(this);
+    }
+  }
+
+  burst(x, y, color, count = 10) {
+    const emitter = this.add.particles(x, y, 'spark', {
+      tint: color,
+      speed: { min: 60, max: 160 },
+      scale: { start: 1.5, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 350,
+      quantity: count,
+    });
+    emitter.setDepth(20);
+    emitter.explode(count, x, y);
+    this.time.delayedCall(450, () => emitter.destroy());
+  }
+
   togglePause() {
     if (this.levelComplete || this.player.isDead) return;
 
@@ -334,9 +357,10 @@ export default class GameScene extends Phaser.Scene {
       player.stompBounce();
       this.score += 50;
       this.showScorePopup(player.x, player.y - 20, '+50');
+      this.burst(enemy.x, enemy.y, 0xffaa88, 8);
       this.updateHUD();
-    } else if (this.takeDamage()) {
-      // side/bottom hit
+    } else {
+      this.takeDamage();
     }
   }
 
@@ -348,6 +372,7 @@ export default class GameScene extends Phaser.Scene {
     this.starsCollected++;
     this.score += STAR_SCORE;
     this.showScorePopup(sx, sy - 10, `+${STAR_SCORE}`);
+    this.burst(sx, sy, 0xffcc44, 10);
     this.sfx.play('coin');
     this.updateHUD();
   }
@@ -357,6 +382,7 @@ export default class GameScene extends Phaser.Scene {
     if (powerUp.type === 'doubleJump') {
       player.grantDoubleJump();
       this.sfx.play('powerup');
+      this.burst(powerUp.x, powerUp.y, 0xff88ff, 10);
       this.events.emit('powerUpCollected', { type: 'doubleJump' });
     }
     powerUp.collect();
@@ -409,6 +435,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.levelComplete || this.player.isDead || this.isPaused) return;
     this.levelComplete = true;
     this.player.setVelocity(0, 0);
+    this.burst(this.player.x, this.player.y, 0xffffaa, 16);
     this.sfx.play('win');
 
     this.events.emit('levelComplete', {
@@ -438,6 +465,7 @@ export default class GameScene extends Phaser.Scene {
   takeDamage() {
     if (this.levelComplete || this.player.isDead || this.player.invuln) return false;
     if (this.player.hurt()) {
+      this.cameras.main.shake(150, 0.006);
       this.loseLife();
       return true;
     }
