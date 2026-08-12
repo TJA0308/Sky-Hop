@@ -1,12 +1,12 @@
 # Sky Hop
 
-[![Play Now](https://img.shields.io/badge/Play-Now-ff6644?style=for-the-badge)](https://tja0308.github.io/Mario-Inspired-Game/)
+[![Play Now](https://img.shields.io/badge/Play-Now-ff6644?style=for-the-badge)](https://tja0308.github.io/Sky-Hop/)
 
 A browser pixel-platformer built with **Phaser 3** and **Vite**. Hop across floating sunset sky-islands across **10 levels**, stomp Pufflings and Wisps, ride moving platforms, grab double-jump power-ups, and reach the Sunset Summit!
 
 ## Play Now
 
-**[▶ Play Sky Hop](https://tja0308.github.io/Mario-Inspired-Game/)** — no install required, runs in any modern browser.
+**[▶ Play Sky Hop](https://tja0308.github.io/Sky-Hop/)** — no install required, runs in any modern browser.
 
 > If the link 404s, GitHub Pages hasn't been enabled yet: **Settings → Pages → source: `gh-pages` branch** (the branch is created automatically by the deploy workflow after the first push to `main`).
 
