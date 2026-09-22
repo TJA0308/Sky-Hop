@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">Sky Hop social preview</title><desc id="desc">Sky Hop title over a blue and lavender sky with floating islands.</desc>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#287dbb"/><stop offset=".55" stop-color="#8fadd7"/><stop offset="1" stop-color="#e8a596"/></linearGradient><filter id="s"><feDropShadow dx="0" dy="10" stdDeviation="0" flood-color="#17243e"/></filter></defs>
+  <rect width="1280" height="640" fill="url(#g)"/><circle cx="1050" cy="120" r="62" fill="#fff0c2" opacity=".88"/>
+  <g fill="#f7fcff" opacity=".75"><ellipse cx="190" cy="146" rx="115" ry="32"/><ellipse cx="245" cy="117" rx="78" ry="53"/><ellipse cx="980" cy="322" rx="135" ry="36"/><ellipse cx="1050" cy="286" rx="86" ry="58"/></g>
+  <g filter="url(#s)"><polygon points="60,452 430,452 353,594 134,594" fill="#405777"/><rect x="60" y="428" width="370" height="35" fill="#55b9a6"/><polygon points="840,432 1220,432 1145,594 930,594" fill="#405777"/><rect x="840" y="408" width="380" height="35" fill="#55b9a6"/></g>
+  <text x="640" y="258" text-anchor="middle" font-family="monospace" font-size="112" font-weight="900" letter-spacing="12" fill="#ffd34e" stroke="#17243e" stroke-width="10" paint-order="stroke">SKY HOP</text>
+  <text x="640" y="326" text-anchor="middle" font-family="monospace" font-size="29" font-weight="700" letter-spacing="5" fill="#fff">A TINY ADVENTURE ABOVE THE CLOUDS</text>
+  <g transform="translate(555 374)" shape-rendering="crispEdges"><rect x="12" y="25" width="70" height="62" fill="#ff684f"/><rect x="18" width="63" height="43" fill="#ffd0a8"/><rect x="30" y="15" width="10" height="10" fill="#17243e"/><rect x="59" y="15" width="10" height="10" fill="#17243e"/><rect x="19" y="87" width="19" height="27" fill="#c9443d"/><rect x="59" y="87" width="19" height="27" fill="#c9443d"/></g>
+  <polygon points="700,386 712,410 739,413 719,431 726,457 700,443 676,457 681,431 661,413 688,410" fill="#ffd34e"/>
+</svg>

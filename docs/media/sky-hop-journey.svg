@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="270" viewBox="0 0 960 270" role="img" aria-labelledby="title desc">
+  <title id="title">Sky Hop three-zone journey</title><desc id="desc">Three pixel-art panels show Sky Meadow, Storm Pass, and Twilight Peaks.</desc>
+  <defs><style>text{font-family:monospace;font-weight:700}.p{shape-rendering:crispEdges}.island{fill:#516c89}.grass{fill:#55b9a6}.cloud{fill:#effbff;opacity:.72}.gold{fill:#ffd34e}</style></defs>
+  <rect width="960" height="270" rx="18" fill="#14223d"/>
+  <g transform="translate(15 15)"><rect width="290" height="240" rx="12" fill="#6ab5dd"/><circle cx="236" cy="47" r="24" fill="#fff0bd"/>
+    <g class="cloud"><ellipse cx="62" cy="68" rx="44" ry="15"/><ellipse cx="88" cy="57" rx="35" ry="24"/></g><g class="p"><polygon class="island" points="30,148 260,148 205,211 83,211"/><rect class="grass" x="30" y="137" width="230" height="18"/><rect x="100" y="118" width="14" height="19" fill="#ff684f"/></g>
+    <text x="145" y="225" text-anchor="middle" fill="#fff" font-size="17">01 · SKY MEADOW</text></g>
+  <text x="320" y="140" class="gold" font-size="28">→</text>
+  <g transform="translate(335 15)"><rect width="290" height="240" rx="12" fill="#536ba5"/><g class="cloud"><ellipse cx="72" cy="73" rx="49" ry="16"/><ellipse cx="105" cy="59" rx="39" ry="26"/><ellipse cx="233" cy="105" rx="42" ry="15"/></g>
+    <g class="p"><polygon class="island" points="22,173 117,173 90,220 47,220"/><rect class="grass" x="22" y="162" width="95" height="17"/><polygon class="island" points="177,125 269,125 245,185 196,185"/><rect class="grass" x="177" y="114" width="92" height="17"/><rect x="128" y="146" width="52" height="11" fill="#55b9a6"/></g>
+    <text x="145" y="225" text-anchor="middle" fill="#fff" font-size="17">02 · STORM PASS</text></g>
+  <text x="640" y="140" class="gold" font-size="28">→</text>
+  <g transform="translate(655 15)"><rect width="290" height="240" rx="12" fill="#55477f"/><circle cx="237" cy="49" r="22" fill="#f8d6b1"/><g fill="#fff" opacity=".65"><rect x="40" y="41" width="3" height="3"/><rect x="116" y="68" width="3" height="3"/><rect x="190" y="36" width="3" height="3"/></g>
+    <g class="p"><polygon class="island" points="28,153 262,153 211,218 78,218"/><rect class="grass" x="28" y="142" width="234" height="18"/><rect x="222" y="87" width="5" height="55" fill="#e8edf1"/><path d="M227 89h38v23h-38z" fill="#ff5572"/><polygon class="gold" points="124,106 130,118 143,119 133,128 137,141 124,134 112,141 115,128 105,119 119,118"/></g>
+    <text x="145" y="225" text-anchor="middle" fill="#fff" font-size="17">03 · TWILIGHT PEAKS</text></g>
+</svg>
