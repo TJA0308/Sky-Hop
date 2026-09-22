@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a gameplay, display, input or save problem.
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and device
+      placeholder: Chrome on Windows, Safari on iPhone, etc.
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Where did it happen?
+      description: Level number or menu, and live site or local build.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include inputs, pickups, checkpoints and saved progress if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot, recording or error message
+      description: Optional. Remove private information before sharing.
