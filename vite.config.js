@@ -11,8 +11,8 @@ export default defineConfig({
     // doesn't invalidate a returning visitor's cached copy of the engine.
     rollupOptions: {
       output: {
-        manualChunks: {
-          phaser: ['phaser'],
+        manualChunks(id) {
+          if (id.includes('/node_modules/phaser/')) return 'phaser';
         },
       },
     },

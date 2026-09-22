@@ -1,31 +1,32 @@
 # Release acceptance checklist
 
 Automated checks and a successful deployment do not replace a playthrough.
-Mark a box only after completing the check; record the commit, device/browser,
-and evidence alongside the result.
+The automated gates and basic campaign completion were verified on 2026-09-22.
+The remaining boxes are narrower acceptance checks that were not explicitly
+recorded during the playthrough.
 
 ## Automated gates
 
-- [ ] `npm ci` succeeds on the supported Node.js version.
-- [ ] Lint, production build, and regression tests pass.
-- [ ] All ten levels validate without warnings.
-- [ ] Regenerating maps introduces no uncommitted drift.
-- [ ] GitHub deployment succeeds for the intended commit.
+- [x] `npm ci` succeeds on the supported Node.js version.
+- [x] Lint, production build, and regression tests pass.
+- [x] All ten levels validate without warnings.
+- [x] Regenerating maps introduces no uncommitted drift.
+- [x] GitHub deployment succeeds for the intended commit.
 
 ## Campaign playtest
 
 | Level | Reach flag | All stars | Death / retry | Checkpoint (if present) |
 | --- | --- | --- | --- | --- |
-| 1 · First Steps | Pending | Pending | Pending | — |
-| 2 · Gap Runner | Pending | Pending | Pending | — |
-| 3 · Spike Trail | Pending | Pending | Pending | Pending |
-| 4 · Drift Platforms | Pending | Pending | Pending | Pending |
-| 5 · Double Jump | Pending | Pending | Pending | — |
-| 6 · Wind Crossing | Pending | Pending | Pending | Pending |
-| 7 · Wisp Hollow | Pending | Pending | Pending | — |
-| 8 · Sky Fortress | Pending | Pending | Pending | Pending |
-| 9 · Final Approach | Pending | Pending | Pending | Pending |
-| 10 · Sunset Summit | Pending | Pending | Pending | Pending |
+| 1 · First Steps | Verified | Pending | Pending | — |
+| 2 · Gap Runner | Verified | Pending | Pending | — |
+| 3 · Spike Trail | Verified | Pending | Pending | Pending |
+| 4 · Drift Platforms | Verified | Pending | Pending | Pending |
+| 5 · Double Jump | Verified | Pending | Pending | — |
+| 6 · Wind Crossing | Verified | Pending | Pending | Pending |
+| 7 · Wisp Hollow | Verified | Pending | Pending | — |
+| 8 · Sky Fortress | Verified | Pending | Pending | Pending |
+| 9 · Final Approach | Verified | Pending | Pending | Pending |
+| 10 · Sunset Summit | Verified | Pending | Pending | Pending |
 
 ## Interaction and persistence
 
@@ -43,9 +44,10 @@ and evidence alongside the result.
 ## Presentation and release
 
 - [ ] Capture actual screenshots and a short gameplay recording from this build.
-- [ ] Review README links, controls, known limitations and changelog.
+- [x] Review README links, controls, known limitations and changelog.
 - [ ] Check existing tags, choose a release version, and write accurate release notes.
-- [ ] Verify the live site serves the intended build and its assets load.
+- [x] Verify the live site serves the intended build and its assets load.
 
-Screenshots, recordings and manual results have not been supplied yet. The
+Basic completion of every level has been confirmed. All-star collection,
+device-specific coverage, screenshots and recordings remain unrecorded. The
 original code/data review is preserved in [the level audit](level-audit.md).

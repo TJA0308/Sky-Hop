@@ -3,6 +3,14 @@
 Changes are grouped by shipped behavior. Commit references identify deployments;
 they do not imply a tagged release.
 
+## Repository maintenance — 2026-09-22
+
+- Updated site metadata to match the full blue-sky-to-sunset visual progression.
+- Recorded the completed campaign and green automated release gates accurately.
+- Upgraded Vite and Vitest and refreshed transitive packages; `npm audit` now
+  reports zero production or development vulnerabilities.
+- Standardized the supported local runtime on Node.js 22.12 or newer in Node 22.
+
 ## Interactive README — 2026-09-22
 
 ### Added

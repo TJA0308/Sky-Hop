@@ -154,7 +154,7 @@ Read the [development case study](docs/development.md), the
 
 ## Run it locally
 
-Use **Node.js 22** and npm.
+Use **Node.js 22.12+ or Node.js 24** and npm. CI uses Node.js 22.
 
 ```bash
 git clone https://github.com/TJA0308/Sky-Hop.git
