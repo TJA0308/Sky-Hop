@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   getSave,
   isLevelUnlocked,
   calcStars,
   recordLevelComplete,
   resetSave,
+  restartProgress,
+  setMuted,
   getTotalProgress,
 } from '../src/utils/SaveManager.js';
 import { LEVELS } from '../src/utils/constants.js';
@@ -101,5 +103,35 @@ describe('resetSave', () => {
     const save = getSave();
     expect(save.unlockedLevel).toBe(0);
     expect(save.levels).toEqual({});
+  });
+});
+
+describe('restartProgress', () => {
+  it('resets the whole campaign while preserving sound and other storage', () => {
+    LEVELS.forEach((_, i) => recordLevelComplete(i, 300, 10, 10));
+    setMuted(true);
+    localStorage.setItem('other-game', 'keep');
+    expect(restartProgress()).toBe(true);
+    expect(getSave()).toEqual({
+      unlockedLevel: 0, levels: {}, settings: { muted: true }, totalScore: 0,
+    });
+    expect(getTotalProgress().levelsCompleted).toBe(0);
+    expect(getTotalProgress().totalStars).toBe(0);
+    expect(isLevelUnlocked(0)).toBe(true);
+    expect(isLevelUnlocked(1)).toBe(false);
+    expect(localStorage.getItem('other-game')).toBe('keep');
+  });
+
+  it('reports storage failure without removing the previous save', () => {
+    recordLevelComplete(0, 300, 10, 10);
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('Storage denied');
+    });
+    try {
+      expect(restartProgress()).toBe(false);
+      expect(getSave().levels['0'].completed).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

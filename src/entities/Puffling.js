@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GRAVITY } from '../utils/constants.js';
 
 export default class Puffling extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, patrolLeft, patrolRight) {
@@ -11,6 +12,7 @@ export default class Puffling extends Phaser.Physics.Arcade.Sprite {
     this.setOffset(2, 4);
     this.setDepth(5);
     this.setImmovable(true);
+    this.body.setGravityY(GRAVITY);
 
     this.patrolLeft = patrolLeft;
     this.patrolRight = patrolRight;
@@ -25,15 +27,18 @@ export default class Puffling extends Phaser.Physics.Arcade.Sprite {
     super.preUpdate(time, delta);
     if (this.isSquished) return;
 
-    this.setVelocityX(this.speed * this.direction);
-
-    if (this.x <= this.patrolLeft) {
+    const ahead = this.scene.groundLayer.getTileAtWorldXY(
+      this.x + this.direction * 10, this.body.bottom + 3
+    );
+    if (this.body.blocked.down && !ahead?.collides) this.direction *= -1;
+    if (this.x <= this.patrolLeft || this.body.blocked.left) {
       this.direction = 1;
       this.setFlipX(true);
-    } else if (this.x >= this.patrolRight) {
+    } else if (this.x >= this.patrolRight || this.body.blocked.right) {
       this.direction = -1;
       this.setFlipX(false);
     }
+    this.setVelocityX(this.speed * this.direction);
   }
 
   squish() {

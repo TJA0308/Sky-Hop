@@ -8,16 +8,16 @@ import {
 import { LEVELS, LEVEL_META, ZONE_NAMES, MAX_LIVES } from '../utils/constants.js';
 
 const NODE_LAYOUT = [
-  { x: 80, y: 280, zone: 1 },
-  { x: 180, y: 260, zone: 1 },
-  { x: 280, y: 280, zone: 1 },
-  { x: 120, y: 200, zone: 2 },
-  { x: 240, y: 180, zone: 2 },
-  { x: 360, y: 200, zone: 2 },
-  { x: 160, y: 120, zone: 3 },
-  { x: 280, y: 100, zone: 3 },
-  { x: 400, y: 120, zone: 3 },
-  { x: 520, y: 100, zone: 3 },
+  { x: 80, y: 215, zone: 1 },
+  { x: 200, y: 215, zone: 1 },
+  { x: 320, y: 215, zone: 1 },
+  { x: 200, y: 150, zone: 2 },
+  { x: 320, y: 150, zone: 2 },
+  { x: 440, y: 150, zone: 2 },
+  { x: 160, y: 85, zone: 3 },
+  { x: 280, y: 85, zone: 3 },
+  { x: 400, y: 85, zone: 3 },
+  { x: 520, y: 85, zone: 3 },
 ];
 
 export default class WorldMapScene extends Phaser.Scene {
@@ -26,6 +26,7 @@ export default class WorldMapScene extends Phaser.Scene {
   }
 
   create() {
+    this.launching = false;
     this.sfx = new Sfx(this);
     this.cameras.main.fadeIn(400, 26, 10, 46);
 
@@ -35,6 +36,7 @@ export default class WorldMapScene extends Phaser.Scene {
     this.add.image(w / 2, h / 2, 'bg-sky').setScrollFactor(0).setDisplaySize(w, h);
     this.add.image(w / 2, h / 2 - 20, 'bg-clouds-far').setScrollFactor(0).setAlpha(0.7).setDisplaySize(w, h);
     this.add.image(w / 2, h / 2, 'bg-islands').setScrollFactor(0).setAlpha(0.5).setDisplaySize(w, h);
+    this.add.rectangle(w / 2, h / 2, w, h, 0x112b4b, 0.35);
 
     this.add
       .text(w / 2, 24, 'WORLD MAP', {
@@ -74,6 +76,18 @@ export default class WorldMapScene extends Phaser.Scene {
 
     this.highlightNode(this.selectedIndex);
 
+    this.add.text(w - 12, 24, 'Restart Progress', {
+      fontFamily: '"Press Start 2P", monospace', fontSize: '6px',
+      color: '#ffaa88', backgroundColor: '#1a0a2e', padding: { x: 8, y: 8 },
+    }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.restartProgress());
+    this.input.keyboard.on('keydown-R', () => this.restartProgress());
+    this.add.text(12, 24, 'Menu', {
+      fontFamily: '"Press Start 2P", monospace', fontSize: '7px', color: '#ffffff',
+      backgroundColor: '#183454', padding: { x: 10, y: 8 },
+    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.goMenu());
+
     this.input.keyboard.on('keydown-LEFT', () => this.moveSelection(-1));
     this.input.keyboard.on('keydown-RIGHT', () => this.moveSelection(1));
     this.input.keyboard.on('keydown-A', () => this.moveSelection(-1));
@@ -87,16 +101,16 @@ export default class WorldMapScene extends Phaser.Scene {
 
   drawZoneLabels() {
     const labels = [
-      { x: 180, y: 310, text: ZONE_NAMES[1] },
-      { x: 240, y: 220, text: ZONE_NAMES[2] },
-      { x: 340, y: 60, text: ZONE_NAMES[3] },
+      { x: 500, y: 235, text: ZONE_NAMES[1] },
+      { x: 70, y: 155, text: ZONE_NAMES[2] },
+      { x: 70, y: 70, text: ZONE_NAMES[3] },
     ];
     labels.forEach((l) => {
       this.add
         .text(l.x, l.y, l.text, {
           fontFamily: '"Press Start 2P", monospace',
           fontSize: '6px',
-          color: '#8866aa',
+        color: '#e0f4ff',
         })
         .setOrigin(0.5);
     });
@@ -191,6 +205,7 @@ export default class WorldMapScene extends Phaser.Scene {
     this.previewBg = this.add
       .rectangle(w / 2, h - 72, w - 24, 52, 0x1a0a2e, 0.75)
       .setStrokeStyle(1, 0x664488);
+    this.previewBg.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.launchLevel());
 
     this.previewTitle = this.add
       .text(w / 2, h - 88, '', {
@@ -239,10 +254,9 @@ export default class WorldMapScene extends Phaser.Scene {
 
   updateFooterHint() {
     if (!this.footerHint) return;
-    const meta = LEVEL_META[this.selectedIndex];
     const unlocked = isLevelUnlocked(this.selectedIndex);
     if (unlocked) {
-      this.footerHint.setText(`← → Select   ENTER — Play "${meta.name}"   ESC Menu`);
+      this.footerHint.setText(`← → Select   ENTER / Tap preview to play   R Reset`);
     } else {
       this.footerHint.setText('← → Select   ESC Menu');
     }
@@ -292,12 +306,14 @@ export default class WorldMapScene extends Phaser.Scene {
   }
 
   launchLevel() {
+    if (this.launching) return;
     const node = this.nodes[this.selectedIndex];
     if (!node.unlocked) {
       this.sfx.play('hurt');
       return;
     }
     this.sfx.play('start');
+    this.launching = true;
     this.cameras.main.fadeOut(300, 26, 10, 46);
     this.time.delayedCall(300, () => {
       this.scene.start('GameScene', { levelIndex: this.selectedIndex, score: 0, fromMap: true });
@@ -310,5 +326,9 @@ export default class WorldMapScene extends Phaser.Scene {
     this.time.delayedCall(300, () => {
       this.scene.start('MenuScene');
     });
+  }
+
+  restartProgress() {
+    this.scene.start('SettingsScene', { returnScene: 'WorldMapScene', focusReset: true });
   }
 }

@@ -6,6 +6,7 @@ import MovingPlatform from '../entities/MovingPlatform.js';
 import PowerUp from '../entities/PowerUp.js';
 import TouchControls from '../entities/TouchControls.js';
 import Sfx from '../utils/sfx.js';
+import { skyTexture } from '../utils/sky.js';
 import { hasVisitedLevel } from '../utils/SaveManager.js';
 import {
   TILE_SIZE,
@@ -23,6 +24,7 @@ export default class GameScene extends Phaser.Scene {
   init(data) {
     this.levelIndex = data.levelIndex ?? 0;
     this.score = data.score ?? 0;
+    this.startingScore = this.score;
     this.lives = data.lives ?? MAX_LIVES;
     this.starsCollected = 0;
     this.isPaused = false;
@@ -46,14 +48,8 @@ export default class GameScene extends Phaser.Scene {
     this.setupPauseMenu();
     this.setupTouchControls();
 
-    this.events.emit('updateHUD', {
-      lives: this.lives,
-      score: this.score,
-      starsCollected: this.starsCollected,
-      starsTotal: this.levelData.stars.length,
-      levelName: this.levelData.name,
-      levelIndex: this.levelIndex,
-    });
+    this.physics.resume();
+    this.updateHUD();
 
     this.showLevelIntro();
   }
@@ -101,7 +97,7 @@ export default class GameScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
 
-    this.bgSky = this.add.tileSprite(0, 0, w, h, 'bg-sky').setOrigin(0).setScrollFactor(0).setDepth(-10);
+    this.bgSky = this.add.image(0, 0, skyTexture(this.levelIndex)).setOrigin(0).setDisplaySize(w, h).setScrollFactor(0).setDepth(-10);
     this.bgClouds = this.add.tileSprite(0, 0, w, h, 'bg-clouds-far').setOrigin(0).setScrollFactor(0).setDepth(-9).setAlpha(0.7);
     this.bgIslands = this.add.tileSprite(0, 0, w, h, 'bg-islands').setOrigin(0).setScrollFactor(0).setDepth(-8).setAlpha(0.5);
     this.bgMist = this.add.tileSprite(0, 0, w, h, 'bg-mist').setOrigin(0).setScrollFactor(0).setDepth(-7).setAlpha(0.6);
@@ -245,6 +241,11 @@ export default class GameScene extends Phaser.Scene {
     if (this.sys.game.device.input.touch) {
       this.touchControls = new TouchControls(this);
     }
+    this.add.text(this.scale.width - 12, 40, 'II PAUSE', {
+      fontFamily: '"Press Start 2P", monospace', fontSize: '7px',
+      color: '#ffffff', backgroundColor: '#183454', padding: { x: 10, y: 10 },
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(80)
+      .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.togglePause());
   }
 
   burst(x, y, color, count = 10) {
@@ -332,7 +333,7 @@ export default class GameScene extends Phaser.Scene {
     this.hidePauseMenu();
     this.isPaused = false;
     this.physics.resume();
-    this.scene.restart({ levelIndex: this.levelIndex, score: this.score, lives: this.lives, fromMap: this.fromMap });
+    this.scene.restart({ levelIndex: this.levelIndex, score: this.startingScore, lives: MAX_LIVES, fromMap: this.fromMap });
   }
 
   quitToMap() {
@@ -365,7 +366,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   collectStar(player, star) {
-    if (!star.active || this.isPaused) return;
+    if (!star.active || this.isPaused || this.levelComplete || player.isDead) return;
     const sx = star.x;
     const sy = star.y;
     star.destroy();
@@ -378,7 +379,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   collectPowerUp(player, powerUp) {
-    if (!powerUp.active || powerUp.collected || this.isPaused) return;
+    if (!powerUp.active || powerUp.collected || this.isPaused || this.levelComplete || player.isDead) return;
     if (powerUp.type === 'doubleJump') {
       player.grantDoubleJump();
       this.sfx.play('powerup');
@@ -435,6 +436,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.levelComplete || this.player.isDead || this.isPaused) return;
     this.levelComplete = true;
     this.player.setVelocity(0, 0);
+    this.physics.pause();
     this.burst(this.player.x, this.player.y, 0xffffaa, 16);
     this.sfx.play('win');
 
@@ -480,15 +482,20 @@ export default class GameScene extends Phaser.Scene {
     );
   }
 
-  updateHUD() {
-    this.events.emit('updateHUD', {
+  getHUDState() {
+    return {
       lives: this.lives,
       score: this.score,
       starsCollected: this.starsCollected,
       starsTotal: this.levelData.stars.length,
       levelName: this.levelData.name,
       levelIndex: this.levelIndex,
-    });
+      hasDoubleJump: this.player.hasDoubleJump,
+    };
+  }
+
+  updateHUD() {
+    this.events.emit('updateHUD', this.getHUDState());
   }
 
   update(time, delta) {
@@ -505,12 +512,12 @@ export default class GameScene extends Phaser.Scene {
     if (this.isPaused) return;
 
     if (Phaser.Input.Keyboard.JustDown(this.restartKey)) {
-      this.scene.restart({ levelIndex: this.levelIndex, score: this.score, lives: this.lives, fromMap: this.fromMap });
+      if (!this.player.isDead) this.restartLevel();
       return;
     }
 
     const scrollX = this.cameras.main.scrollX;
-    this.bgClouds.tilePositionX = scrollX * 0.2;
+    this.bgClouds.tilePositionX = scrollX * 0.2 + time * 0.003;
     this.bgIslands.tilePositionX = scrollX * 0.4;
     this.bgMist.tilePositionX = scrollX * 0.6;
 

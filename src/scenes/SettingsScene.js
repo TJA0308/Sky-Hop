@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import Sfx from '../utils/sfx.js';
-import { isMuted, setMuted, resetSave } from '../utils/SaveManager.js';
+import { isMuted, setMuted, restartProgress } from '../utils/SaveManager.js';
 import { toggleFullscreen } from '../utils/fullscreen.js';
 
 export default class SettingsScene extends Phaser.Scene {
@@ -11,6 +11,7 @@ export default class SettingsScene extends Phaser.Scene {
   init(data) {
     this.returnScene = data.returnScene || 'MenuScene';
     this.confirmReset = false;
+    this.focusReset = data.focusReset ?? false;
   }
 
   create() {
@@ -34,9 +35,10 @@ export default class SettingsScene extends Phaser.Scene {
     this.menuItems = [
       { label: () => this.muteText(), action: () => this.toggleMute() },
       { label: () => this.fullscreenText(), action: () => this.toggleFullscreen() },
-      { label: () => (this.confirmReset ? 'Confirm Reset?' : 'Reset Progress'), action: () => this.handleReset() },
+      { label: () => (this.confirmReset ? 'Confirm Restart Progress' : 'Restart Progress'), action: () => this.handleReset() },
+      { label: () => 'Back / Cancel', action: () => this.goBack() },
     ];
-    this.selectedIndex = 0;
+    this.selectedIndex = this.focusReset ? 2 : 0;
     this.menuTexts = [];
 
     this.menuItems.forEach((item, i) => {
@@ -49,11 +51,27 @@ export default class SettingsScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: false });
       txt.on('pointerover', () => {
+        if (i !== 2) this.confirmReset = false;
         this.selectedIndex = i;
         this.refreshMenuHighlight();
       });
       txt.on('pointerdown', item.action);
       this.menuTexts.push(txt);
+    });
+
+    this.resetMessage = this.add.text(w / 2, 270,
+      'Restart clears all unlocks, stars and best scores.\nSound settings stay the same.', {
+        fontFamily: '"Press Start 2P", monospace', fontSize: '6px',
+        color: '#ffaa88', align: 'center', lineSpacing: 8,
+      }).setOrigin(0.5);
+    this.refreshMenuHighlight();
+
+    const refreshFullscreen = () => this.refreshMenuHighlight();
+    this.scale.on('enterfullscreen', refreshFullscreen);
+    this.scale.on('leavefullscreen', refreshFullscreen);
+    this.events.once('shutdown', () => {
+      this.scale.off('enterfullscreen', refreshFullscreen);
+      this.scale.off('leavefullscreen', refreshFullscreen);
     });
 
     this.add
@@ -75,10 +93,13 @@ export default class SettingsScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-UP', () => this.moveMenu(-1));
     this.input.keyboard.on('keydown-DOWN', () => this.moveMenu(1));
     this.input.keyboard.on('keydown-M', () => this.toggleMute());
-    this.input.keyboard.on('keydown-F', () => this.toggleFullscreen());
     this.input.keyboard.on('keydown-ESC', () => this.goBack());
-    this.input.keyboard.on('keydown-ENTER', () => this.confirmMenu());
-    this.input.keyboard.on('keydown-SPACE', () => this.confirmMenu());
+    this.input.keyboard.on('keydown-ENTER', (event) => {
+      if (!event.repeat) this.confirmMenu();
+    });
+    this.input.keyboard.on('keydown-SPACE', (event) => {
+      if (!event.repeat) this.confirmMenu();
+    });
   }
 
   muteText() {
@@ -101,6 +122,7 @@ export default class SettingsScene extends Phaser.Scene {
 
   moveMenu(dir) {
     this.selectedIndex = Phaser.Math.Clamp(this.selectedIndex + dir, 0, this.menuItems.length - 1);
+    this.confirmReset = false;
     this.sfx.play('select');
     this.refreshMenuHighlight();
   }
@@ -129,10 +151,15 @@ export default class SettingsScene extends Phaser.Scene {
       this.refreshMenuHighlight();
       return;
     }
-    resetSave();
+    if (!restartProgress()) {
+      this.confirmReset = false;
+      this.resetMessage.setText('Could not clear saved progress.\nCheck browser storage permissions and try again.');
+      this.refreshMenuHighlight();
+      return;
+    }
     this.confirmReset = false;
     this.sfx.play('start');
-    this.refreshMenuHighlight();
+    this.scene.start('WorldMapScene');
   }
 
   goBack() {

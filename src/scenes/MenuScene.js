@@ -18,6 +18,7 @@ export default class MenuScene extends Phaser.Scene {
     this.add.image(w / 2, h / 2, 'bg-sky').setScrollFactor(0).setDisplaySize(w, h);
     this.add.image(w / 2, h / 2 - 20, 'bg-clouds-far').setScrollFactor(0).setAlpha(0.7).setDisplaySize(w, h);
     this.add.image(w / 2, h / 2, 'bg-islands').setScrollFactor(0).setAlpha(0.5).setDisplaySize(w, h);
+    this.add.rectangle(w / 2, 222, 260, 166, 0x112b4b, 0.85).setStrokeStyle(1, 0x93d7ed, 0.5);
 
     const title = this.add
       .text(w / 2, 60, 'SKY HOP', {
@@ -38,7 +39,7 @@ export default class MenuScene extends Phaser.Scene {
     });
 
     this.add
-      .text(w / 2, 100, 'Sunset Island Adventure', {
+      .text(w / 2, 100, 'An adventure above the clouds', {
         fontFamily: '"Press Start 2P", monospace',
         fontSize: '8px',
         color: '#ffaa88',
@@ -47,6 +48,7 @@ export default class MenuScene extends Phaser.Scene {
 
     this.menuItems = [
       { label: 'Play', action: () => this.goWorldMap() },
+      { label: 'Restart Progress', action: () => this.scene.start('SettingsScene', { returnScene: 'MenuScene', focusReset: true }) },
       { label: 'How to Play', action: () => this.showHowToPlay() },
       { label: 'Settings', action: () => this.goSettings() },
       { label: 'Credits', action: () => this.showCredits() },
@@ -145,6 +147,7 @@ export default class MenuScene extends Phaser.Scene {
       'Reach the flag to win',
       'Esc / P — Pause menu',
       'R — Restart level',
+      'Touch: use buttons and tap Pause',
     ]);
   }
 
@@ -164,7 +167,7 @@ export default class MenuScene extends Phaser.Scene {
     const h = this.scale.height;
 
     const panel = this.add.container(0, 0).setDepth(50);
-    panel.add(this.add.rectangle(w / 2, h / 2, w, h, 0x1a0a2e, 0.85));
+    panel.add(this.add.rectangle(w / 2, h / 2, w, h, 0x1a0a2e, 0.95).setInteractive());
 
     panel.add(
       this.add
@@ -211,6 +214,11 @@ export default class MenuScene extends Phaser.Scene {
     };
 
     this.panelOpen = true;
+    const closeButton = this.add.text(w / 2, h - 16, 'Close', {
+      fontFamily: '"Press Start 2P", monospace', fontSize: '8px', color: '#ffffff',
+      backgroundColor: '#285878', padding: { x: 16, y: 6 },
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', close);
+    panel.add(closeButton);
     this.input.keyboard.once('keydown-ESC', close);
     this.input.keyboard.once('keydown-ENTER', close);
     this.input.keyboard.once('keydown-SPACE', close);

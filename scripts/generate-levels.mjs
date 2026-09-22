@@ -30,6 +30,20 @@ function addSpikes(tiles, y, xStart, xEnd) {
 }
 
 function baseLevel(data) {
+  // Ground enemies need an actual walkable surface, even when an authored
+  // position was originally placed over a gap or underneath an upper island.
+  const groundEnemy = (enemy) => {
+    if (enemy.type === 'wisp') return enemy;
+    const surfaces = data.tiles[0].map((_, x) => ({
+      x, y: data.tiles.findIndex((row) => row[x] === TILE.GRASS),
+    })).filter((p) => p.y > 0 && data.tiles[p.y - 1][p.x] === TILE.EMPTY);
+    const surface = surfaces.sort((a, b) => Math.abs(a.x - enemy.x) - Math.abs(b.x - enemy.x))[0];
+    if (!surface) throw new Error(`No safe enemy surface in ${data.name}`);
+    let end = surface.x;
+    while (end < surface.x + enemy.patrol && data.tiles[surface.y][end + 1] === TILE.GRASS
+      && data.tiles[surface.y - 1][end + 1] === TILE.EMPTY) end++;
+    return { ...enemy, x: surface.x, y: surface.y - 1, patrol: Math.max(0, end - surface.x) };
+  };
   return {
     movingPlatforms: [],
     powerUps: [],
@@ -37,7 +51,7 @@ function baseLevel(data) {
     ...data,
     enemies: (data.enemies || []).map((e) => ({
       type: 'puffling',
-      ...e,
+      ...groundEnemy(e),
     })),
   };
 }
@@ -112,7 +126,7 @@ function buildLevel2() {
     hint: 'Time your jumps across wide gaps.',
     stars: [
       [2, 11], [5, 11], [8, 11], [12, 8], [15, 8],
-      [26, 11], [30, 11], [35, 11],
+      [26, 11], [30, 10], [35, 11],
       [46, 9], [50, 9], [48, 7],
       [60, 11], [64, 9], [66, 9],
       [74, 10], [80, 10], [84, 11], [88, 11],
@@ -200,7 +214,7 @@ function buildLevel4() {
     tiles,
     spawn: { x: 2, y: 11 },
     goal: { x: 116, y: 10 },
-    checkpoint: null,
+    checkpoint: { x: 56, y: 10 },
     hint: 'Ride the drifting islands!',
     movingPlatforms: [
       { x: 18, y: 10, distance: 5, axis: 'x', speed: 45 },
@@ -254,7 +268,7 @@ function buildLevel5() {
     spawn: { x: 2, y: 13 },
     goal: { x: 116, y: 12 },
     checkpoint: null,
-    hint: 'Grab the sparkle — jump twice!',
+    hint: 'Grab the sparkle; release jump, then press again in midair!',
     powerUps: [{ x: 8, y: 13, type: 'doubleJump' }],
     stars: [
       [4, 13], [8, 13], [12, 13], [20, 12], [24, 11],
@@ -363,7 +377,7 @@ function buildLevel7() {
     spawn: { x: 2, y: 12 },
     goal: { x: 126, y: 11 },
     checkpoint: null,
-    hint: 'Stomp Wisps from above only!',
+    hint: 'Grab the sparkle first! Double-jump across gaps; stomp Wisps.',
     powerUps: [{ x: 14, y: 12, type: 'doubleJump' }],
     stars: [
       [4, 12], [8, 12], [12, 12],
@@ -450,13 +464,13 @@ function buildLevel9() {
   fillGround(tiles, groundY, 138, 149);
   fillGround(tiles, groundY - 2, 18, 22);
   fillGround(tiles, groundY - 4, 30, 34);
-  fillGround(tiles, groundY - 2, 44, 48);
+  fillGround(tiles, groundY - 2, 44, 49);
   fillGround(tiles, groundY - 5, 56, 60);
-  fillGround(tiles, groundY - 3, 70, 76);
+  fillGround(tiles, groundY - 3, 69, 76);
   fillGround(tiles, groundY - 2, 84, 90);
   fillGround(tiles, groundY - 4, 98, 102);
   fillGround(tiles, groundY - 2, 112, 116);
-  fillGround(tiles, groundY - 3, 124, 128);
+  fillGround(tiles, groundY - 3, 124, 129);
 
   addSpikes(tiles, groundY, 26, 28);
   addSpikes(tiles, groundY - 2, 52, 54);
@@ -471,7 +485,7 @@ function buildLevel9() {
     tiles,
     spawn: { x: 2, y: 13 },
     goal: { x: 146, y: 12 },
-    checkpoint: null,
+    checkpoint: { x: 72, y: 10 },
     hint: 'Platforms, Wisps, and spikes — all skills!',
     powerUps: [],
     movingPlatforms: [
@@ -534,7 +548,7 @@ function buildLevel10() {
     tiles,
     spawn: { x: 2, y: 13 },
     goal: { x: 156, y: 12 },
-    checkpoint: { x: 80, y: 10 },
+    checkpoint: { x: 80, y: 9 },
     hint: 'Find the sparkle before the final climb!',
     powerUps: [{ x: 66, y: 11, type: 'doubleJump' }],
     movingPlatforms: [

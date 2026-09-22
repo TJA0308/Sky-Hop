@@ -10,7 +10,7 @@ const DEFAULT_SAVE = {
 };
 
 function normalizeSave(data) {
-  const save = { ...DEFAULT_SAVE, ...data, levels: { ...data.levels } };
+  const save = { ...DEFAULT_SAVE, ...data, levels: { ...data.levels }, settings: { ...DEFAULT_SAVE.settings, ...data.settings } };
   if (!save.settings || typeof save.settings !== 'object') {
     save.settings = { ...DEFAULT_SAVE.settings };
   }
@@ -26,10 +26,10 @@ function normalizeSave(data) {
 function loadRaw() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return { ...DEFAULT_SAVE, levels: {} };
+    if (!raw) return { ...DEFAULT_SAVE, levels: {}, settings: { ...DEFAULT_SAVE.settings } };
     return normalizeSave(JSON.parse(raw));
   } catch {
-    return { ...DEFAULT_SAVE, levels: {} };
+    return { ...DEFAULT_SAVE, levels: {}, settings: { ...DEFAULT_SAVE.settings } };
   }
 }
 
@@ -110,6 +110,20 @@ export function recordLevelComplete(levelIndex, score, starsCollected, starsTota
 
 export function resetSave() {
   localStorage.removeItem(SAVE_KEY);
+}
+
+// Restart the campaign without changing sound preferences or unrelated storage.
+// Return failure so the UI never claims that progress was cleared when it wasn't.
+export function restartProgress() {
+  const settings = { ...getSettings() };
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      ...DEFAULT_SAVE, levels: {}, settings,
+    }));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function getTotalProgress() {

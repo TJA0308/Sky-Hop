@@ -34,7 +34,7 @@ const config = {
 const game = new Phaser.Game(config);
 
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'f' || e.key === 'F') {
+  if (!e.repeat && (e.key === 'f' || e.key === 'F')) {
     toggleFullscreen(game.scale);
   }
 });

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { LEVELS } from '../utils/constants.js';
+import { generateSkyTextures } from '../utils/sky.js';
 
 const PALETTE = {
   skyDeep: 0x1a0a2e,
@@ -77,7 +78,7 @@ export default class BootScene extends Phaser.Scene {
       { label: 'Generating player...', fn: () => this.generatePlayerSheet() },
       { label: 'Generating enemies...', fn: () => this.generateEnemySheets() },
       { label: 'Generating items...', fn: () => this.generateItemSheets() },
-      { label: 'Generating backgrounds...', fn: () => this.generateParallax() },
+      { label: 'Painting the skies...', fn: () => generateSkyTextures(this) },
       { label: 'Creating animations...', fn: () => this.createAnimations() },
     ];
 
@@ -338,53 +339,6 @@ export default class BootScene extends Phaser.Scene {
     hg.destroy();
   }
 
-  generateParallax() {
-    const w = 320;
-    const h = 180;
-
-    const bg = this.make.graphics({ x: 0, y: 0, add: false });
-    for (let y = 0; y < h; y++) {
-      const t = y / h;
-      const r = Phaser.Math.Linear(0x1a, 0xc4, t * 0.5 + 0.3);
-      const gv = Phaser.Math.Linear(0x0a, 0x5c, t * 0.5 + 0.2);
-      const b = Phaser.Math.Linear(0x2e, 0x26, t);
-      bg.fillStyle(Phaser.Display.Color.GetColor(r, gv, b));
-      bg.fillRect(0, y, w, 1);
-    }
-    bg.generateTexture('bg-sky', w, h);
-    bg.destroy();
-
-    const clouds = this.make.graphics({ x: 0, y: 0, add: false });
-    clouds.fillStyle(PALETTE.cloudFar, 0.6);
-    clouds.fillEllipse(60, 80, 80, 30);
-    clouds.fillEllipse(200, 60, 100, 35);
-    clouds.fillEllipse(280, 100, 60, 25);
-    clouds.generateTexture('bg-clouds-far', w, h);
-    clouds.destroy();
-
-    const islands = this.make.graphics({ x: 0, y: 0, add: false });
-    islands.fillStyle(PALETTE.stoneDark, 0.7);
-    islands.fillEllipse(40, 150, 60, 20);
-    islands.fillStyle(PALETTE.grassDark, 0.5);
-    islands.fillEllipse(40, 145, 50, 8);
-    islands.fillStyle(PALETTE.stoneDark, 0.7);
-    islands.fillEllipse(180, 160, 80, 25);
-    islands.fillStyle(PALETTE.grassDark, 0.5);
-    islands.fillEllipse(180, 153, 65, 10);
-    islands.fillStyle(PALETTE.stoneDark, 0.6);
-    islands.fillEllipse(270, 140, 50, 18);
-    islands.generateTexture('bg-islands', w, h);
-    islands.destroy();
-
-    const mist = this.make.graphics({ x: 0, y: 0, add: false });
-    mist.fillStyle(PALETTE.mist, 0.15);
-    mist.fillRect(0, h - 40, w, 40);
-    mist.fillStyle(PALETTE.mist, 0.1);
-    mist.fillEllipse(100, h - 20, 120, 30);
-    mist.fillEllipse(250, h - 15, 100, 25);
-    mist.generateTexture('bg-mist', w, h);
-    mist.destroy();
-  }
 
   addTextureFrames(key, fw, fh, count) {
     const tex = this.textures.get(key);

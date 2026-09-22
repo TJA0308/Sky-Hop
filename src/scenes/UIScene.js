@@ -82,8 +82,10 @@ export default class UIScene extends Phaser.Scene {
     gameScene.events.on('levelComplete', this.onLevelComplete, this);
     gameScene.events.on('gameOver', this.onGameOver, this);
     gameScene.events.on('powerUpCollected', this.onPowerUpCollected, this);
+    this.onUpdateHUD(gameScene.getHUDState());
 
     this.events.on('shutdown', () => {
+      this.clearOverlayBindings();
       gameScene.events.off('updateHUD', this.onUpdateHUD, this);
       gameScene.events.off('levelComplete', this.onLevelComplete, this);
       gameScene.events.off('gameOver', this.onGameOver, this);
@@ -116,6 +118,8 @@ export default class UIScene extends Phaser.Scene {
     this.starsCollected = data.starsCollected;
     this.starsTotal = data.starsTotal;
     this.levelName = data.levelName;
+    this.hasDoubleJump = data.hasDoubleJump ?? false;
+    this.doubleJumpBadge.setText(this.hasDoubleJump ? '✦ 2x JUMP' : '');
     if (data.levelIndex !== undefined) this.levelIndex = data.levelIndex;
 
     this.refreshHUD();
@@ -230,8 +234,8 @@ export default class UIScene extends Phaser.Scene {
 
       this.tweens.add({ targets: continueText, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
 
-      this.input.keyboard.once('keydown-ENTER', () => this.advanceLevel(data, isLastLevel));
-      this.input.keyboard.once('keydown-SPACE', () => this.advanceLevel(data, isLastLevel));
+      const next = this.bindOverlayAction(['ENTER', 'SPACE'], () => this.advanceLevel(data, isLastLevel));
+      continueText.setPadding(12).setInteractive({ useHandCursor: true }).on('pointerdown', next);
     });
   }
 
@@ -320,8 +324,8 @@ export default class UIScene extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(201);
 
-      this.input.keyboard.once('keydown-ENTER', () => this.goToMap());
-      this.input.keyboard.once('keydown-SPACE', () => this.goToMap());
+      this.overlayButton('World Map', h / 2 + 105,
+        this.bindOverlayAction(['ENTER', 'SPACE'], () => this.goToMap()));
     });
   }
 
@@ -360,7 +364,8 @@ export default class UIScene extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(201);
 
-      this.input.keyboard.once('keydown-ENTER', () => this.goToMap());
+      this.overlayButton('World Map', h / 2 + 85,
+        this.bindOverlayAction(['ENTER'], () => this.goToMap()));
 
       const retry = () => {
         this.clearOverlay();
@@ -375,8 +380,8 @@ export default class UIScene extends Phaser.Scene {
         });
         this.scene.launch('UIScene', { levelIndex: idx, score: 0, lives: MAX_LIVES });
       };
-      this.input.keyboard.once('keydown-R', retry);
-      this.input.keyboard.once('keydown-SPACE', retry);
+      this.overlayButton('Retry Level', h / 2 + 125,
+        this.bindOverlayAction(['R', 'SPACE'], retry));
     });
   }
 
@@ -385,10 +390,13 @@ export default class UIScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
     this.overlay = this.add.rectangle(w / 2, h / 2, w, h, 0x1a0a2e, 0.75).setScrollFactor(0).setDepth(200);
+    this.overlay.setInteractive();
+    this.overlayBusy = false;
     buildContent();
   }
 
   clearOverlay() {
+    this.clearOverlayBindings();
     if (this.overlay) {
       this.overlay.destroy();
       this.overlay = null;
@@ -396,5 +404,35 @@ export default class UIScene extends Phaser.Scene {
     this.children.list
       .filter((c) => c.depth >= 200)
       .forEach((c) => c.destroy());
+  }
+
+  clearOverlayBindings() {
+    for (const [key, handler] of this.overlayBindings || []) {
+      this.input.keyboard.off(`keydown-${key}`, handler);
+    }
+    this.overlayBindings = [];
+  }
+
+  bindOverlayAction(keys, action) {
+    const handler = (event) => {
+      if (event?.repeat || this.overlayBusy) return;
+      this.overlayBusy = true;
+      this.clearOverlayBindings();
+      action();
+    };
+    this.overlayBindings ??= [];
+    for (const key of keys) {
+      this.input.keyboard.on(`keydown-${key}`, handler);
+      this.overlayBindings.push([key, handler]);
+    }
+    return handler;
+  }
+
+  overlayButton(label, y, action) {
+    return this.add.text(this.scale.width / 2, y, label, {
+      fontFamily: '"Press Start 2P", monospace', fontSize: '8px',
+      color: '#ffffff', backgroundColor: '#285878', padding: { x: 16, y: 10 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201)
+      .setInteractive({ useHandCursor: true }).on('pointerdown', action);
   }
 }

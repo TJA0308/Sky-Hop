@@ -68,7 +68,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
   preUpdate(time, delta) {
     super.preUpdate(time, delta);
-    if (this.isDead) return;
+    if (this.isDead || this.scene.levelComplete || this.scene.isPaused) return;
 
     this.updateRidingPlatform();
 

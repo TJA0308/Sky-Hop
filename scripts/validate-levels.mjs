@@ -23,6 +23,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { TILE_SIZE, TILE, LEVELS } from '../src/utils/constants.js';
 import { maxSingleJumpRangePx, maxDoubleJumpRangePx } from './lib/jumpPhysics.mjs';
+import { entityIssues } from './lib/entityValidation.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const tilemapDir = join(__dirname, '..', 'public', 'assets', 'tilemaps');
@@ -154,7 +155,7 @@ function checkGapReachability(level) {
 
 function validateLevel(levelKey) {
   const level = JSON.parse(readFileSync(join(tilemapDir, `${levelKey}.json`), 'utf-8'));
-  const overlapIssues = checkPlatformOverlap(level);
+  const overlapIssues = [...checkPlatformOverlap(level), ...entityIssues(level)];
   const gapResults = checkGapReachability(level);
 
   overlapIssues.forEach((msg) => {
