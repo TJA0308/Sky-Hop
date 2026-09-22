@@ -3,6 +3,18 @@
 Changes are grouped by shipped behavior. Commit references identify deployments;
 they do not imply a tagged release.
 
+## Interactive README — 2026-09-22
+
+### Added
+
+- Clickable animated pixel-art hero built from Sky Hop's visual language.
+- Three-zone journey artwork and GitHub-native expandable sections.
+- Faster paths to play, learn the controls, inspect the build, and run locally.
+- A lightweight social-preview composition ready for repository presentation.
+
+The artwork is illustrative and labeled as such; it is not presented as captured
+gameplay. Authentic screenshots and a gameplay recording remain future media work.
+
 ## Sky and gameplay polish — 2026-09-22
 
 Shipped in [`9259b44`](https://github.com/TJA0308/Sky-Hop/commit/9259b4456f6583d03920db5129058853f78b7e53).

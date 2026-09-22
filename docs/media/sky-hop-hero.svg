@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Sky Hop animated pixel-art scene</title>
+  <desc id="desc">A small adventurer jumps between floating islands above drifting clouds as the sky changes from blue to twilight.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2777b9"><animate attributeName="stop-color" values="#2777b9;#343d82;#2777b9" dur="12s" repeatCount="indefinite"/></stop>
+      <stop offset="0.58" stop-color="#a9ddea"><animate attributeName="stop-color" values="#a9ddea;#9d8dcc;#a9ddea" dur="12s" repeatCount="indefinite"/></stop>
+      <stop offset="1" stop-color="#f2c1a0"><animate attributeName="stop-color" values="#f2c1a0;#e7a58f;#f2c1a0" dur="12s" repeatCount="indefinite"/></stop>
+    </linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="8" stdDeviation="0" flood-color="#162b4a" flood-opacity=".45"/></filter>
+    <style>
+      .pixel{shape-rendering:crispEdges}.cloud{fill:#f7fcff;opacity:.72}.cloudShade{fill:#cce8f5;opacity:.75}
+      .stone{fill:#557190}.stoneDark{fill:#354963}.grass{fill:#54b8a6}.grassLight{fill:#8ae0c2}
+      .ink{fill:#17243e}.gold{fill:#ffd34e}.coral{fill:#ff684f}.light{fill:#ffd0a8}
+      text{font-family:monospace;font-weight:700;letter-spacing:4px}
+    </style>
+  </defs>
+  <rect width="960" height="540" fill="url(#sky)"/>
+  <circle cx="768" cy="112" r="54" fill="#fff0c2" opacity=".28"/>
+  <circle cx="768" cy="112" r="31" fill="#fff4c9" opacity=".92"/>
+  <g opacity=".55" fill="#fff">
+    <rect x="72" y="80" width="4" height="4"/><rect x="145" y="124" width="4" height="4"/><rect x="565" y="68" width="4" height="4"/>
+    <rect x="675" y="172" width="4" height="4"/><rect x="857" y="72" width="4" height="4"/><rect x="905" y="151" width="4" height="4"/>
+  </g>
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="-180 0;180 0;-180 0" dur="28s" repeatCount="indefinite"/>
+    <g transform="translate(110 145)"><ellipse class="cloudShade" cx="0" cy="22" rx="90" ry="25"/><ellipse class="cloud" cx="-35" cy="7" rx="43" ry="28"/><ellipse class="cloud" cx="10" cy="-5" rx="56" ry="39"/><ellipse class="cloud" cx="57" cy="10" rx="40" ry="26"/></g>
+    <g transform="translate(630 245) scale(.72)"><ellipse class="cloudShade" cx="0" cy="22" rx="90" ry="25"/><ellipse class="cloud" cx="-35" cy="7" rx="43" ry="28"/><ellipse class="cloud" cx="10" cy="-5" rx="56" ry="39"/><ellipse class="cloud" cx="57" cy="10" rx="40" ry="26"/></g>
+  </g>
+  <g filter="url(#shadow)" class="pixel">
+    <g transform="translate(50 372)"><polygon class="stoneDark" points="0,20 250,20 205,126 65,126"/><polygon class="stone" points="15,20 235,20 195,108 72,108"/><rect class="grass" width="250" height="25"/><rect class="grassLight" y="0" width="250" height="7"/><rect x="68" y="25" width="14" height="47" fill="#405a75"/><rect x="160" y="25" width="18" height="68" fill="#405a75"/></g>
+    <g transform="translate(366 310)"><polygon class="stoneDark" points="0,20 220,20 174,128 45,128"/><polygon class="stone" points="14,20 206,20 166,110 52,110"/><rect class="grass" width="220" height="25"/><rect class="grassLight" width="220" height="7"/><rect x="112" y="25" width="17" height="62" fill="#405a75"/></g>
+    <g transform="translate(675 355)"><polygon class="stoneDark" points="0,20 235,20 193,128 48,128"/><polygon class="stone" points="14,20 222,20 184,110 55,110"/><rect class="grass" width="235" height="25"/><rect class="grassLight" width="235" height="7"/></g>
+  </g>
+  <g class="pixel" transform="translate(280 305)">
+    <animateTransform attributeName="transform" type="translate" values="280 305;365 225;455 262;545 225;645 318" keyTimes="0;.25;.5;.72;1" dur="4.6s" repeatCount="indefinite"/>
+    <rect class="coral" x="6" y="12" width="34" height="30"/><rect fill="#c9443d" x="2" y="18" width="8" height="20"/>
+    <rect class="light" x="8" y="0" width="31" height="20"/><rect class="ink" x="14" y="7" width="5" height="5"/><rect class="ink" x="28" y="7" width="5" height="5"/>
+    <rect fill="#c9443d" x="9" y="42" width="9" height="13"/><rect fill="#c9443d" x="29" y="42" width="9" height="13"/>
+  </g>
+  <g transform="translate(611 247)" class="pixel">
+    <animateTransform attributeName="transform" type="translate" values="611 247;611 235;611 247" dur="1.1s" repeatCount="indefinite"/>
+    <polygon class="gold" points="0,-21 7,-7 22,-6 11,4 15,20 0,11 -15,20 -11,4 -22,-6 -7,-7"/>
+    <rect x="-3" y="-5" width="6" height="6" fill="#fffbd1"/>
+  </g>
+  <g transform="translate(836 293)" class="pixel"><rect x="0" width="7" height="82" fill="#e5edf2"/><path d="M7 4h61v35H7z" fill="#ff5572"/><rect x="18" y="13" width="12" height="12" class="gold"/></g>
+  <rect y="487" width="960" height="53" fill="#14223d" opacity=".92"/>
+  <text x="42" y="522" fill="#fff" font-size="20">RUN • JUMP • RISE ABOVE THE CLOUDS</text>
+  <text x="918" y="522" text-anchor="end" fill="#ffd34e" font-size="17">PLAY →</text>
+</svg>
