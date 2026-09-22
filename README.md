@@ -1,144 +1,130 @@
 # Sky Hop
 
-[![Play Now](https://img.shields.io/badge/Play-Now-ff6644?style=for-the-badge)](https://tja0308.github.io/Sky-Hop/)
+[![Play Sky Hop](https://img.shields.io/badge/Play-Sky_Hop-328fc7?style=for-the-badge)](https://tja0308.github.io/Sky-Hop/)
+[![Build and deploy](https://github.com/TJA0308/Sky-Hop/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/TJA0308/Sky-Hop/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A browser pixel-platformer built with **Phaser 3** and **Vite**. Cross **10 floating-island levels** through blue skies, high clouds, lavender twilight and a sunset summit. Stomp Pufflings and Wisps, ride moving platforms, and collect double-jump power-ups.
+**A tiny adventure above the clouds.** Jump across ten floating-island levels,
+ride drifting platforms, dodge enemies, and climb from blue skies to a sunset summit.
 
-## Play Now
+[Play in your browser](https://tja0308.github.io/Sky-Hop/) ·
+[Development story](docs/development.md) ·
+[Changelog](CHANGELOG.md) ·
+[Report a bug](https://github.com/TJA0308/Sky-Hop/issues/new?template=bug_report.yml)
 
-**[▶ Play Sky Hop](https://tja0308.github.io/Sky-Hop/)** — no install required, runs in any modern browser.
+## The game
 
-> If the link 404s, GitHub Pages hasn't been enabled yet: **Settings → Pages → source: `gh-pages` branch** (the branch is created automatically by the deploy workflow after the first push to `main`).
+- **Ten levels, three zones:** Sky Meadow, Storm Pass, and Twilight Peaks.
+- **Four sky palettes:** daytime blue, high-altitude clouds, lavender twilight, and a peach-lit finale.
+- **Platforming mechanics:** variable-height jumps, double-jump pickups, moving platforms, checkpoints, and two enemy types.
+- **Replayable progression:** unlock levels, earn up to three stars, and improve your best scores.
+- **Browser-local saves:** continue where you left off or confirm **Restart Progress** to start fresh.
+- **Procedural art and sound:** sprites, scenery, and effects are generated in code with Phaser 3 and Web Audio.
 
-## Quick start (local)
+The game is built with JavaScript, Phaser 3, and Vite. No account or backend is required.
+
+## How to play
+
+Reach the flag to unlock the next level. Collect 50%, 80%, or 100% of a level's
+stars for a one-, two-, or three-star rating. Completing with fewer still unlocks
+the next level.
+
+| Input | Action |
+| --- | --- |
+| ← / → or A / D | Move |
+| Space, W, or ↑ | Jump; hold for more height |
+| Release and press jump again | Double jump after collecting a sparkle |
+| Esc / P or the Pause button | Pause |
+| R during gameplay | Restart this level with a fresh score and three lives |
+| Enter | Confirm menu selection or continue |
+| F | Toggle fullscreen |
+| R on the world map | Open Restart Progress |
+
+On touch devices, use the movement and jump buttons. Menu actions, pause,
+retry, and completion actions are tappable. Select a map node, then tap its
+preview to play.
+
+### Saves and starting over
+
+Progress belongs to the current browser and site address. Local development
+and the live game have separate saves; clearing browser storage removes them.
+
+Choose **Restart Progress** from the title screen or map, then activate
+**Restart Progress → Confirm Restart Progress** in Settings. This clears
+unlocks, ratings, and best scores while keeping sound preferences.
+**Back / Cancel** or **Esc** preserves your save.
+
+## Run locally
+
+Use **Node.js 22** (the CI version) and npm.
 
 ```bash
-npm install
+git clone https://github.com/TJA0308/Sky-Hop.git
+cd Sky-Hop
+npm ci
 npm run dev
 ```
 
-Open the URL shown in the terminal (usually `http://localhost:5173`).
+Open the address printed by Vite, usually `http://localhost:5173`.
+On Windows PowerShell, use `npm.cmd` if execution policy blocks `npm.ps1`.
 
-## Build for production
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Generate and validate maps, then start Vite |
+| `npm run build` | Generate and validate maps, then build into `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | Check JavaScript style and common errors |
+| `npm test` | Run regression tests |
+| `npm run validate-levels` | Check the existing generated maps |
 
-```bash
-npm run build
+## Quality and project status
+
+The game is deployed, with automated checks for saves, scene behavior,
+jump calculations, entity placement, and all ten generated maps. Pull requests
+run lint, build, tests, and a generated-map consistency check.
+
+**Still to verify:** complete browser and touch playthroughs, every all-star
+route, and moving-platform timing. Geometry checks approximate movement;
+they do not prove that every route feels fair. Screenshots and a gameplay
+video will follow actual visual verification.
+
+## Inside the project
+
+```text
+src/
+  scenes/       Boot, menus, world map, gameplay, and HUD
+  entities/     Player, enemies, platforms, power-ups, and touch input
+  utils/        Physics constants, sky textures, saves, and sound
+scripts/
+  generate-levels.mjs    Source of truth for level geometry
+  validate-levels.mjs    Geometry and placement checks
+public/assets/tilemaps/  Generated maps loaded by the game
+tests/                  Regression tests
+docs/                   Development notes and the level audit
 ```
 
-Static files are output to `dist/`. Preview locally with:
+Edit levels in `scripts/generate-levels.mjs`, then run `npm run build`.
+Direct JSON edits are overwritten by the generator.
 
-```bash
-npm run preview
-```
+## Development and contribution
 
-## Controls
+Sky Hop is a prompt-engineered project: natural-language direction, generated
+implementation, code review, and regression testing shaped the result.
+The [development case study](docs/development.md) documents a real iteration
+and the defects that verification uncovered.
 
-| Key | Action |
-|-----|--------|
-| ← → or A D | Move |
-| Space / W / ↑ | Jump (hold for higher jump) |
-| Enter | Start / confirm |
-| Esc / P | Pause menu |
-| R | Restart level |
-| ↑ ↓ | Menu / world map navigation |
+- [Contributing](CONTRIBUTING.md): setup, change guidelines, and verification.
+- [Level audit](docs/level-audit.md): original findings and the implemented fixes.
+- [Changelog](CHANGELOG.md): shipped improvements.
+- [Release checklist](docs/release-checklist.md): remaining acceptance checks.
 
-## Features
+## Deployment
 
-- **10 levels** across 3 zones, with four procedural sky palettes and drifting clouds
-- **World map** with unlock progression and star ratings (0–3 ★)
-- **Save progress** via localStorage (unlocks, stars, best scores)
-- **Restart Progress** on the title screen and world map, with confirmation
-- **New mechanics**: moving platforms, double-jump power-ups, Wisp enemies
-- **Pause menu**, settings (mute), level intro hints, credits / how-to-play
-- **Auto-deploy** to GitHub Pages on push to `main`/`master`
-
-On touch devices, use the on-screen movement/jump buttons and **Pause**.
-Completion, retry, settings and map actions are clickable/tappable. Tap the
-selected level's preview to play. Restarting a level resets its score and restores
-three lives; it does not clear saved campaign progress.
-
-## Quality checks
-
-```bash
-npm run lint
-npm run build
-npm test
-```
-
-The build regenerates all maps and validates geometry, entity clearance and
-ground-enemy patrols. Tests cover save/reset behavior, level regressions, jump
-math and scene transitions. Pull requests run these checks before deployment.
-Automated checks are not a substitute for a complete browser playthrough.
-
-## Deploy
-
-GitHub Actions workflow (`.github/workflows/deploy.yml`) builds and publishes `dist/` to the `gh-pages` branch automatically.
-
-1. Push to `main` or `master`
-2. Enable GitHub Pages: repo **Settings → Pages →** source: **`gh-pages`** branch
-3. Your game will be live at `https://<username>.github.io/<repo>/`
-
-## Project structure
-
-```
-├── index.html
-├── package.json
-├── vite.config.js
-├── .github/workflows/deploy.yml
-├── public/assets/tilemaps/   # Level JSON data (10 levels)
-├── scripts/generate-levels.mjs
-└── src/
-    ├── main.js
-    ├── scenes/               # Boot, Menu, WorldMap, Game, UI, Settings
-    ├── entities/             # Player, Puffling, Wisp, MovingPlatform, PowerUp
-    └── utils/                # Constants, SaveManager, SFX
-```
-
-Pixel art sprites and tilesets are generated programmatically at boot time — no external art tools required.
-
-## Saved progress and starting over
-
-Play opens the world map with your highest unlocked level selected. You can
-replay any unlocked level. Saves belong to the current browser and site address;
-local development and GitHub Pages have separate saves.
-
-To start over, choose **Restart Progress** on the title screen or world map
-(keyboard shortcut: **R** on the map). In Settings, select **Restart Progress**,
-then **Confirm Restart Progress**. This clears all level unlocks, star ratings,
-and best scores, keeps your sound setting, and returns to the map with only
-Level 1 unlocked. **Back / Cancel** or **Esc** leaves progress unchanged.
-During gameplay, **R** still restarts only the current level.
-
-## Evaluation and release preparation
-
-See [the level audit and GitHub release checklist](docs/level-audit.md) for the
-review of all ten levels, known issues, verification limits, and the remaining
-work before a polished release.
-
-See [the development case study](docs/development.md) for the prompt-driven
-iteration, architecture and remaining playtest checklist.
-
-## Regenerate level maps
-
-```bash
-node scripts/generate-levels.mjs
-```
-
-## Levels
-
-| # | Name | Zone | Focus |
-|---|------|------|--------------|
-| 1 | First Steps | Sky Meadow | Basics, enemies and introductory spikes |
-| 2 | Gap Runner | Sky Meadow | Wide gaps |
-| 3 | Spike Trail | Sky Meadow | Spikes + checkpoint |
-| 4 | Drift Platforms | Storm Pass | Moving platforms |
-| 5 | Double Jump | Storm Pass | Power-up |
-| 6 | Wind Crossing | Storm Pass | Combo challenge |
-| 7 | Wisp Hollow | Twilight Peaks | Wisp enemy |
-| 8 | Sky Fortress | Twilight Peaks | Mixed enemies |
-| 9 | Final Approach | Twilight Peaks | All mechanics |
-| 10 | Sunset Summit | Twilight Peaks | Finale |
+Pushes to `main` or `master` run the checks and publish `dist/` to
+`gh-pages`. For a fork, enable GitHub Pages with **Deploy from a branch →
+gh-pages → / (root)** and update the links above. Vite uses relative asset paths
+so the build can run under a repository URL.
 
 ## License
 
-MIT — demo project, free to use and modify.
+[MIT](LICENSE). Phaser, Vite, and other dependencies retain their own licenses.

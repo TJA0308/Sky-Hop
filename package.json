@@ -1,7 +1,16 @@
 {
   "name": "sky-hop",
   "version": "1.0.0",
-  "description": "Sky Hop — a sunset sky-island pixel platformer demo",
+  "description": "A ten-level floating-island platformer with procedural skies, built with Phaser 3 and Vite.",
+  "license": "MIT",
+  "homepage": "https://tja0308.github.io/Sky-Hop/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TJA0308/Sky-Hop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TJA0308/Sky-Hop/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "node scripts/generate-levels.mjs && node scripts/validate-levels.mjs && vite",
