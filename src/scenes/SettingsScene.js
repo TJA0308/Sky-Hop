@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import Sfx from '../utils/sfx.js';
+import music from '../utils/music.js';
 import { isMuted, setMuted, restartProgress } from '../utils/SaveManager.js';
 import { toggleFullscreen } from '../utils/fullscreen.js';
 
@@ -135,6 +136,7 @@ export default class SettingsScene extends Phaser.Scene {
     this.muted = !this.muted;
     setMuted(this.muted);
     this.sfx.setMuted(this.muted);
+    music.setMuted(this.muted);
     this.refreshMenuHighlight();
     if (!this.muted) this.sfx.play('select');
   }

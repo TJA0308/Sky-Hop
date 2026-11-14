@@ -13,7 +13,7 @@ skies through lavender twilight to the Sunset Summit.
 
 [![Play Sky Hop](https://img.shields.io/badge/▶_PLAY_SKY_HOP-328fc7?style=for-the-badge)](https://tja0308.github.io/Sky-Hop/)
 [![Build and deploy](https://github.com/TJA0308/Sky-Hop/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/TJA0308/Sky-Hop/actions/workflows/deploy.yml)
-[![Tests: 39](https://img.shields.io/badge/tests-39_passing-54b8a6?style=flat-square)](tests)
+[![Tests: 50](https://img.shields.io/badge/tests-50_passing-54b8a6?style=flat-square)](tests)
 [![License: MIT](https://img.shields.io/badge/license-MIT-ffd34e?style=flat-square)](LICENSE)
 
 [Play](https://tja0308.github.io/Sky-Hop/) ·
@@ -138,7 +138,7 @@ against the same physics constants used at runtime.
 
 - The campaign has been manually played successfully.
 - All ten generated levels pass geometry and entity-placement validation.
-- 39 automated tests cover saves, resets, jump calculations, authored maps,
+- 50 automated tests cover saves, resets, jump calculations, authored maps,
   attempt lifecycle, HUD state, and overlay transitions.
 - Pull requests run lint, production build, tests, and map-drift checks.
 - Pushes to `main` deploy the verified build to GitHub Pages.

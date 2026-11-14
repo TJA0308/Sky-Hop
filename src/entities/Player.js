@@ -8,6 +8,9 @@ import {
   JUMP_BUFFER,
   STOMP_BOUNCE,
   INVULN_TIME,
+  GLIDE_TIME,
+  GLIDE_FALL_SPEED,
+  UPDRAFT_MAX_RISE,
 } from '../utils/constants.js';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
@@ -22,7 +25,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.setDepth(10);
 
     this.body.setGravityY(GRAVITY);
-    this.body.setMaxVelocity(PLAYER_SPEED, 600);
+    // Horizontal headroom above run speed is for tailwinds only; running is
+    // still capped at PLAYER_SPEED where the velocity is set in preUpdate.
+    this.body.setMaxVelocity(PLAYER_SPEED * 2, 600);
 
     this.facing = 1;
     this.coyoteTimer = 0;
@@ -31,8 +36,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.invuln = false;
     this.hasDoubleJump = false;
     this.doubleJumpUsed = false;
+    this.hasGlide = false;
+    this.glideLeft = GLIDE_TIME;
+    this.isGliding = false;
     this.ridingPlatform = null;
     this.wasJumpHeld = false;
+    this.wasOnGround = true;
+    this.lastVy = 0;
+    this.runDustTimer = 0;
 
     this.cursors = scene.input.keyboard.createCursorKeys();
     this.keys = scene.input.keyboard.addKeys({
@@ -43,6 +54,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     });
 
     this.play('player-idle');
+  }
+
+  grantGlide() {
+    this.hasGlide = true;
+    this.glideLeft = GLIDE_TIME;
   }
 
   grantDoubleJump() {
@@ -74,9 +90,17 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     const onGround = this.body.blocked.down || this.body.touching.down;
     const platformVx = this.ridingPlatform?.body.velocity.x ?? 0;
+    if (onGround && !this.wasOnGround && this.lastVy > 140) {
+      this.scene.dust?.(this.x, this.body.bottom, 6);
+      this.scene.sfx?.play('land');
+    }
+    this.wasOnGround = onGround;
+    this.lastVy = this.body.velocity.y;
+
     if (onGround) {
       this.coyoteTimer = COYOTE_TIME;
       this.doubleJumpUsed = false;
+      this.glideLeft = GLIDE_TIME;
     } else {
       this.coyoteTimer = Math.max(0, this.coyoteTimer - delta);
     }
@@ -99,16 +123,22 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.jumpBufferTimer = Math.max(0, this.jumpBufferTimer - delta);
     }
 
+    // Wind only acts on an airborne hero, so standing still is always safe.
+    const wind = onGround ? null : this.scene.windAt?.(this.x, this.y);
+    let runVx = platformVx;
     if (left) {
-      this.setVelocityX(platformVx - PLAYER_SPEED);
+      runVx -= PLAYER_SPEED;
       this.facing = -1;
       this.setFlipX(true);
     } else if (right) {
-      this.setVelocityX(platformVx + PLAYER_SPEED);
+      runVx += PLAYER_SPEED;
       this.facing = 1;
       this.setFlipX(false);
-    } else {
-      this.setVelocityX(platformVx);
+    }
+    runVx = Math.max(-PLAYER_SPEED, Math.min(PLAYER_SPEED, runVx));
+    this.setVelocityX(runVx + (wind?.x ?? 0));
+    if (wind?.y) {
+      this.setVelocityY(Math.max(this.body.velocity.y + (wind.y * delta) / 1000, -UPDRAFT_MAX_RISE));
     }
 
     if (this.jumpBufferTimer > 0) {
@@ -117,11 +147,13 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.coyoteTimer = 0;
         this.jumpBufferTimer = 0;
         this.scene.sfx?.play('jump');
+        this.scene.dust?.(this.x, this.body.bottom, 4);
       } else if (this.hasDoubleJump && !this.doubleJumpUsed && !onGround) {
         this.setVelocityY(JUMP_VELOCITY * 0.9);
         this.doubleJumpUsed = true;
         this.jumpBufferTimer = 0;
         this.scene.sfx?.play('jump');
+        this.scene.burst?.(this.x, this.body.bottom, 0xff88ff, 6);
       }
     }
 
@@ -129,6 +161,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.setVelocityY(this.body.velocity.y * JUMP_CUT_MULTIPLIER);
     }
     this.wasJumpHeld = jumpHeld;
+
+    // Glide: holding jump while falling caps the fall speed for a short time.
+    this.isGliding =
+      this.hasGlide && !onGround && jumpHeld && this.glideLeft > 0 && this.body.velocity.y > GLIDE_FALL_SPEED;
+    if (this.isGliding) {
+      this.setVelocityY(GLIDE_FALL_SPEED);
+      this.glideLeft -= delta;
+      this.scene.glideTrail?.(this.x, this.y - 6);
+    }
 
     if (this.ridingPlatform && this.body.touching.down && this.body.velocity.y >= 0) {
       const platformVy = this.ridingPlatform.body.velocity.y;
@@ -145,6 +186,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       }
     } else if (left || right) {
       this.play('player-run', true);
+      this.runDustTimer -= delta;
+      if (this.runDustTimer <= 0) {
+        this.runDustTimer = 240;
+        this.scene.dust?.(this.x - this.facing * 4, this.body.bottom, 1);
+      }
     } else {
       this.play('player-idle', true);
     }
@@ -180,6 +226,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(0, 0);
     this.setAlpha(1);
     this.doubleJumpUsed = false;
+    this.glideLeft = GLIDE_TIME;
     this.play('player-idle');
     this.invuln = true;
     this.scene.time.delayedCall(INVULN_TIME, () => {

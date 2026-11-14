@@ -47,6 +47,8 @@ function baseLevel(data) {
   return {
     movingPlatforms: [],
     powerUps: [],
+    crumbling: [],
+    wind: [],
     hint: '',
     ...data,
     enemies: (data.enemies || []).map((e) => ({
@@ -327,7 +329,14 @@ function buildLevel6() {
     spawn: { x: 2, y: 11 },
     goal: { x: 126, y: 10 },
     checkpoint: { x: 64, y: 10 },
-    hint: 'Ride the drifters — time your jumps!',
+    hint: 'Gusts push your jumps — watch the streaks!',
+    // fx: sideways push in px/s (negative = headwind). fy: lift acceleration.
+    wind: [
+      { x: 36, y: 3, w: 4, h: 9, fx: -55 },
+      { x: 59, y: 2, w: 2, h: 10, fy: -1400 },
+      { x: 69, y: 3, w: 4, h: 9, fx: 55 },
+      { x: 91, y: 2, w: 4, h: 10, fx: -55 },
+    ],
     movingPlatforms: [
       { x: 19, y: 11, distance: 2, axis: 'x', speed: 45 },
       { x: 47, y: 10, distance: 3, axis: 'x', speed: 50 },
@@ -336,7 +345,7 @@ function buildLevel6() {
     stars: [
       [4, 11], [8, 11], [14, 11],
       [24, 10], [33, 10], [42, 9], [45, 9],
-      [53, 9], [56, 9], [64, 10], [67, 10],
+      [53, 9], [56, 9], [59, 5], [60, 4], [64, 10], [67, 10],
       [75, 9], [78, 9], [86, 10], [89, 10],
       [97, 9], [100, 9], [108, 10], [112, 10],
       [122, 11], [126, 10],
@@ -414,7 +423,7 @@ function buildLevel8() {
   fillGround(tiles, groundY - 3, 68, 76);
   fillGround(tiles, groundY - 1, 84, 92);
   fillGround(tiles, groundY - 2, 100, 108);
-  fillGround(tiles, groundY - 1, 116, 124);
+  // 109-127 is crossed on crumbling stone (see `crumbling` below).
 
   addSpikes(tiles, groundY, 48, 50);
   addSpikes(tiles, groundY - 1, 80, 82);
@@ -428,7 +437,13 @@ function buildLevel8() {
     spawn: { x: 2, y: 12 },
     goal: { x: 136, y: 11 },
     checkpoint: { x: 70, y: 9 },
-    hint: 'Pufflings and Wisps together.',
+    hint: 'Cracked stone crumbles — keep moving!',
+    crumbling: [
+      { x: 111, y: 11, width: 2 },
+      { x: 115, y: 12, width: 2 },
+      { x: 119, y: 12, width: 2 },
+      { x: 123, y: 12, width: 2 },
+    ],
     movingPlatforms: [
       { x: 14, y: 10, distance: 3, axis: 'x', speed: 40 },
       { x: 64, y: 8, distance: 4, axis: 'y', speed: 35 },
@@ -438,7 +453,7 @@ function buildLevel8() {
       [24, 10], [28, 10], [40, 9], [44, 9],
       [56, 10], [60, 10], [72, 8], [76, 8],
       [88, 10], [92, 10], [104, 9], [108, 9],
-      [118, 10], [122, 10], [130, 12], [134, 11],
+      [112, 9], [116, 10], [120, 10], [124, 10], [130, 12], [134, 11],
     ],
     enemies: [
       { x: 10, y: 12, patrol: 3 },
@@ -448,7 +463,6 @@ function buildLevel8() {
       { x: 70, y: 7, patrol: 2, type: 'wisp' },
       { x: 88, y: 10, patrol: 3, type: 'puffling' },
       { x: 102, y: 8, patrol: 2, type: 'wisp' },
-      { x: 120, y: 10, patrol: 4, type: 'puffling' },
     ],
   });
 }
@@ -461,7 +475,8 @@ function buildLevel9() {
   const groundY = 14;
 
   fillGround(tiles, groundY, 0, 12);
-  fillGround(tiles, groundY, 138, 149);
+  // The last gap (130-141) is too wide to jump: it needs the glide feather.
+  fillGround(tiles, groundY, 142, 149);
   fillGround(tiles, groundY - 2, 18, 22);
   fillGround(tiles, groundY - 4, 30, 34);
   fillGround(tiles, groundY - 2, 44, 49);
@@ -486,8 +501,8 @@ function buildLevel9() {
     spawn: { x: 2, y: 13 },
     goal: { x: 146, y: 12 },
     checkpoint: { x: 72, y: 10 },
-    hint: 'Platforms, Wisps, and spikes — all skills!',
-    powerUps: [],
+    hint: 'Grab the feather — hold jump while falling to glide!',
+    powerUps: [{ x: 74, y: 10, type: 'glide' }],
     movingPlatforms: [
       { x: 36, y: 11, distance: 4, axis: 'x', speed: 50 },
       { x: 62, y: 10, distance: 3, axis: 'y', speed: 40 },
@@ -499,7 +514,7 @@ function buildLevel9() {
       [58, 8], [64, 8], [72, 10], [76, 10],
       [86, 11], [90, 11], [100, 9], [106, 9],
       [114, 11], [118, 11], [126, 10], [130, 10],
-      [136, 13], [142, 12],
+      [134, 9], [138, 10], [144, 12],
     ],
     enemies: [
       { x: 16, y: 13, patrol: 3 },

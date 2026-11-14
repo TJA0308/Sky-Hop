@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import Sfx from '../utils/sfx.js';
+import { addSkyLayers } from '../utils/sky.js';
+import { playZoneMusic } from '../utils/music.js';
 import {
   isLevelUnlocked,
   getLevelProgress,
@@ -33,9 +35,11 @@ export default class WorldMapScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
 
-    this.add.image(w / 2, h / 2, 'bg-sky').setScrollFactor(0).setDisplaySize(w, h);
-    this.add.image(w / 2, h / 2 - 20, 'bg-clouds-far').setScrollFactor(0).setAlpha(0.7).setDisplaySize(w, h);
-    this.add.image(w / 2, h / 2, 'bg-islands').setScrollFactor(0).setAlpha(0.5).setDisplaySize(w, h);
+    // Fade the island layers so they never compete with the level nodes.
+    const sky = addSkyLayers(this, 0);
+    sky[1].setAlpha(0.35);
+    sky[2].setAlpha(0.3);
+    playZoneMusic(this, 0);
     this.add.rectangle(w / 2, h / 2, w, h, 0x112b4b, 0.35);
 
     this.add

@@ -22,7 +22,12 @@ import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { TILE_SIZE, TILE, LEVELS } from '../src/utils/constants.js';
-import { maxSingleJumpRangePx, maxDoubleJumpRangePx } from './lib/jumpPhysics.mjs';
+import {
+  maxSingleJumpRangePx,
+  maxDoubleJumpRangePx,
+  maxGlideRangePx,
+  windAdjustedRangePx,
+} from './lib/jumpPhysics.mjs';
 import { entityIssues } from './lib/entityValidation.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -103,7 +108,7 @@ function checkPlatformOverlap(level) {
 
 function checkGapReachability(level) {
   const results = [];
-  const { tiles, width, height, movingPlatforms = [], powerUps = [] } = level;
+  const { tiles, width, height, movingPlatforms = [], powerUps = [], crumbling = [], wind = [] } = level;
 
   const top = surfaceHeightMap(tiles, width, height);
   const groundSegments = extractSegments(top);
@@ -112,9 +117,13 @@ function checkGapReachability(level) {
     .filter((mp) => (mp.axis || 'x') === 'x')
     .map((mp) => ({ xStart: mp.x, xEnd: mp.x + mp.distance, y: mp.y, isPlatform: true }));
 
-  const segments = [...groundSegments, ...platformSegments].sort((a, b) => a.xStart - b.xStart);
+  // Crumbling platforms hold long enough to jump from, so they count as ground.
+  const crumbleSegments = crumbling.map((c) => ({ xStart: c.x, xEnd: c.x + c.width - 1, y: c.y, isPlatform: true }));
+
+  const segments = [...groundSegments, ...platformSegments, ...crumbleSegments].sort((a, b) => a.xStart - b.xStart);
 
   const firstDoubleJumpX = powerUps.find((p) => p.type === 'doubleJump')?.x ?? null;
+  const firstGlideX = powerUps.find((p) => p.type === 'glide')?.x ?? null;
 
   for (let i = 0; i < segments.length - 1; i++) {
     const cur = segments[i];
@@ -128,7 +137,17 @@ function checkGapReachability(level) {
     const deltaYpx = (next.y - cur.y) * TILE_SIZE;
 
     const hasDoubleJump = firstDoubleJumpX !== null && firstDoubleJumpX <= cur.xEnd;
-    const maxRangePx = hasDoubleJump ? maxDoubleJumpRangePx(deltaYpx) : maxSingleJumpRangePx(deltaYpx);
+    const hasGlide = firstGlideX !== null && firstGlideX <= cur.xEnd;
+    let maxRangePx = hasDoubleJump ? maxDoubleJumpRangePx(deltaYpx) : maxSingleJumpRangePx(deltaYpx);
+    if (hasGlide && maxRangePx !== null) maxRangePx = Math.max(maxRangePx, maxGlideRangePx(deltaYpx));
+
+    // The strongest headwind over the gap shortens the jump; tailwinds are
+    // ignored so a gap is never passed only because the wind happens to help.
+    const headwind = Math.min(
+      0,
+      ...wind.filter((z) => z.fx && z.x <= next.xStart && z.x + z.w > cur.xEnd).map((z) => z.fx)
+    );
+    if (maxRangePx !== null) maxRangePx = windAdjustedRangePx(maxRangePx, headwind);
 
     if (maxRangePx === null) {
       results.push({

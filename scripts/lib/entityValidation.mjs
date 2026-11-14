@@ -8,6 +8,8 @@ export function entityIssues(level) {
     ...level.stars.map(([x, y], i) => [`star ${i}`, { x, y }]),
     ...(level.powerUps || []).map((p, i) => [`power-up ${i}`, p]),
     ...level.enemies.map((p, i) => [`enemy ${i}`, p]),
+    ...(level.crumbling || []).flatMap((c, i) =>
+      Array.from({ length: c.width }, (_, dx) => [`crumbling platform ${i}`, { x: c.x + dx, y: c.y }])),
   ];
   for (const [label, p] of points) {
     if (!p) continue;

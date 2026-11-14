@@ -41,3 +41,19 @@ export const LEVEL_META = [
 ];
 
 export const ZONE_NAMES = ['', 'Sky Meadow', 'Storm Pass', 'Twilight Peaks'];
+
+// Gameplay camera. 1.5 shows about 27x15 tiles, the full height of a level.
+// (2 is crisper, since whole-number zoom keeps every pixel the same size.)
+export const CAMERA_ZOOM = 1.5;
+export const CAMERA_LOOKAHEAD = 28;
+// Extra room below the map so island undersides and the cloud bank are visible.
+export const CAMERA_BOTTOM_PAD = 32;
+
+// Glide feather: hold jump while falling to drift, for this long per airtime.
+export const GLIDE_TIME = 800;
+export const GLIDE_FALL_SPEED = 70;
+// Updrafts accelerate the hero upward but never faster than this.
+export const UPDRAFT_MAX_RISE = 170;
+// Crumbling platforms: how long they hold once stepped on, and regrow time.
+export const CRUMBLE_DELAY = 450;
+export const CRUMBLE_RESPAWN = 2600;

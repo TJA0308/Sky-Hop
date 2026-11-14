@@ -3,7 +3,7 @@ import { TILE_SIZE } from '../utils/constants.js';
 
 export default class PowerUp extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, type = 'doubleJump') {
-    super(scene, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 'powerup');
+    super(scene, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, type === 'glide' ? 'feather' : 'powerup');
     scene.add.existing(this);
     scene.physics.add.existing(this);
 

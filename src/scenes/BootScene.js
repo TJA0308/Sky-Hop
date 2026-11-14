@@ -103,32 +103,89 @@ export default class BootScene extends Phaser.Scene {
 
   generateTileset() {
     const ts = 16;
-    const cols = 4;
+    const cols = 14;
     const g = this.make.graphics({ x: 0, y: 0, add: false });
+    const C = {
+      grassLight: 0x7fdcbc,
+      grass: PALETTE.grass,
+      grassDark: PALETTE.grassDark,
+      dirt: PALETTE.stone,
+      dirtDark: PALETTE.stoneDark,
+      dirtDeep: 0x4e2c22,
+      dirtLight: 0xa87860,
+    };
 
-    g.fillStyle(PALETTE.grassDark);
-    g.fillRect(0, ts, ts, ts);
-    g.fillStyle(PALETTE.grass);
-    g.fillRect(0, 0, ts, 4);
-    g.fillRect(0, 4, ts, ts - 4);
-    for (let x = 2; x < ts; x += 4) {
-      g.fillStyle(PALETTE.grassDark);
-      g.fillRect(x, 1, 2, 2);
-    }
+    // One solid tile, drawn row by row so rounded corners stay transparent.
+    const paint = (frame, { grass = false, left = false, right = false, bottom = false }) => {
+      const ox = frame * ts;
+      for (let y = 0; y < ts; y++) {
+        let x0 = 0;
+        let x1 = ts;
+        if (grass && y < 2) {
+          if (left) x0 = 2 - y;
+          if (right) x1 = ts - (2 - y);
+        }
+        if (bottom && y >= 12) {
+          const cut = [1, 2, 3, 5][y - 12];
+          if (left) x0 = cut;
+          if (right) x1 = ts - cut;
+        }
+        const isGrassRow = grass && y < 6;
+        g.fillStyle(isGrassRow ? (y < 2 ? C.grassLight : y === 5 ? C.grassDark : C.grass) : C.dirt);
+        g.fillRect(ox + x0, y, x1 - x0, 1);
+        if (!isGrassRow) {
+          if (left) {
+            g.fillStyle(C.dirtLight);
+            g.fillRect(ox + x0, y, 1, 1);
+          }
+          if (right) {
+            g.fillStyle(C.dirtDark);
+            g.fillRect(ox + x1 - 2, y, 2, 1);
+          }
+          if (bottom && y >= 13) {
+            g.fillStyle(C.dirtDeep);
+            g.fillRect(ox + x0, y, x1 - x0, 1);
+          }
+        }
+      }
+      // Pebbles and strata, kept clear of every corner.
+      const top = grass ? 8 : 2;
+      g.fillStyle(C.dirtDark);
+      g.fillRect(ox + 3, top + 1, 3, 1);
+      g.fillRect(ox + 10, top + 4, 2, 1);
+      if (!grass) g.fillRect(ox + 6, 10, 3, 1);
+      g.fillStyle(C.dirtLight);
+      g.fillRect(ox + 11, top, 2, 1);
+      if (!grass) g.fillRect(ox + 2, 7, 2, 1);
+      if (grass) {
+        // Grass blades hanging over the dirt.
+        g.fillStyle(C.grassDark);
+        for (const bx of [2, 6, 11]) g.fillRect(ox + bx, 6, 2, 2);
+        g.fillStyle(C.grass);
+        for (const bx of [4, 9, 13]) g.fillRect(ox + bx, 6, 1, 1);
+      }
+    };
 
-    g.fillStyle(PALETTE.stoneDark);
-    g.fillRect(ts, 0, ts, ts);
-    g.fillStyle(PALETTE.stone);
-    g.fillRect(ts + 1, 1, 6, 6);
-    g.fillRect(ts + 9, 1, 6, 6);
-    g.fillRect(ts + 1, 9, 6, 6);
-    g.fillRect(ts + 9, 9, 6, 6);
+    paint(0, { grass: true });
+    paint(1, {});
+    paint(4, { grass: true, left: true });
+    paint(5, { grass: true, right: true });
+    paint(6, { grass: true, left: true, right: true });
+    paint(7, { left: true });
+    paint(8, { right: true });
+    paint(9, { left: true, right: true });
+    paint(10, { bottom: true });
+    paint(11, { bottom: true, left: true });
+    paint(12, { bottom: true, right: true });
+    paint(13, { bottom: true, left: true, right: true });
 
     g.fillStyle(PALETTE.spikeDark);
-    g.fillRect(ts * 2, ts - 4, ts, 4);
+    g.fillRect(ts * 2, ts - 3, ts, 3);
     for (let x = 0; x < ts; x += 4) {
       g.fillStyle(PALETTE.spike);
-      g.fillTriangle(ts * 2 + x, ts - 4, ts * 2 + x + 2, ts - 12, ts * 2 + x + 4, ts - 4);
+      g.fillTriangle(ts * 2 + x, ts - 3, ts * 2 + x + 2, ts - 12, ts * 2 + x + 4, ts - 3);
+      g.fillStyle(PALETTE.white);
+      g.fillRect(ts * 2 + x + 1, ts - 8, 1, 4);
     }
 
     g.fillStyle(PALETTE.flagPole);
@@ -286,14 +343,60 @@ export default class BootScene extends Phaser.Scene {
     pg.destroy();
 
     const mg = this.make.graphics({ x: 0, y: 0, add: false });
-    mg.fillStyle(PALETTE.grassDark);
-    mg.fillRect(0, 8, 16, 8);
-    mg.fillStyle(PALETTE.grass);
-    mg.fillRect(0, 4, 16, 6);
     mg.fillStyle(PALETTE.stoneDark);
-    mg.fillRect(0, 12, 16, 4);
+    mg.fillRect(1, 8, 14, 3);
+    mg.fillRect(3, 11, 10, 2);
+    mg.fillRect(6, 13, 4, 1);
+    mg.fillStyle(PALETTE.stone);
+    mg.fillRect(1, 8, 12, 1);
+    mg.fillStyle(PALETTE.grass);
+    mg.fillRect(0, 5, 16, 3);
+    mg.fillStyle(0x7fdcbc);
+    mg.fillRect(1, 4, 14, 1);
+    mg.fillStyle(PALETTE.grassDark);
+    mg.fillRect(3, 8, 2, 1);
+    mg.fillRect(10, 8, 2, 1);
     mg.generateTexture('moving-platform', 16, 16);
     mg.destroy();
+
+    // Crumbling platform: pale cracked stone, one repeating 16px tile.
+    const kg = this.make.graphics({ x: 0, y: 0, add: false });
+    kg.fillStyle(0xb9a48f);
+    kg.fillRect(0, 0, 16, 10);
+    kg.fillStyle(0xd8c8b2);
+    kg.fillRect(0, 0, 16, 2);
+    kg.fillStyle(0x8f7a68);
+    kg.fillRect(0, 8, 16, 2);
+    kg.fillRect(2, 10, 5, 2);
+    kg.fillRect(10, 10, 4, 3);
+    kg.fillStyle(0x6a5648);
+    kg.fillRect(5, 2, 1, 3);
+    kg.fillRect(6, 4, 1, 3);
+    kg.fillRect(11, 1, 1, 2);
+    kg.fillRect(12, 3, 1, 4);
+    kg.fillRect(15, 0, 1, 10);
+    kg.generateTexture('crumble', 16, 16);
+    kg.destroy();
+
+    // Glide feather pickup.
+    const qg = this.make.graphics({ x: 0, y: 0, add: false });
+    qg.fillStyle(0x9fe8ff);
+    qg.fillEllipse(9, 7, 8, 12);
+    qg.fillStyle(PALETTE.white);
+    qg.fillEllipse(8, 6, 5, 9);
+    qg.fillStyle(0x5aa8d8);
+    qg.fillRect(4, 12, 2, 3);
+    qg.fillRect(5, 10, 2, 2);
+    qg.fillRect(7, 5, 1, 6);
+    qg.generateTexture('feather', 16, 16);
+    qg.destroy();
+
+    // Thin streak for wind and rain particles.
+    const wg2 = this.make.graphics({ x: 0, y: 0, add: false });
+    wg2.fillStyle(PALETTE.white);
+    wg2.fillRect(0, 0, 8, 1);
+    wg2.generateTexture('streak', 8, 1);
+    wg2.destroy();
 
     const fg = this.make.graphics({ x: 0, y: 0, add: false });
     fg.fillStyle(PALETTE.flagPole);
