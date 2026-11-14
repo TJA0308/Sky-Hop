@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { describe, it, expect, vi } from 'vitest';
-vi.mock('phaser', () => ({ default: { Scene: class {}, Physics: { Arcade: { Sprite: class {} } } } }));
+vi.mock('phaser', () => ({ default: { Scene: class {}, Physics: { Arcade: { Sprite: class {} } }, GameObjects: { TileSprite: class {} } } }));
 import GameScene from '../src/scenes/GameScene.js';
 import UIScene from '../src/scenes/UIScene.js';
 

@@ -16,6 +16,11 @@ export default class UIScene extends Phaser.Scene {
     this.levelName = '';
     this.overlay = null;
     this.hasDoubleJump = false;
+    this.hasGlide = false;
+  }
+
+  abilityText() {
+    return [this.hasDoubleJump && '✦ 2x JUMP', this.hasGlide && '❖ GLIDE'].filter(Boolean).join(' ');
   }
 
   create() {
@@ -78,6 +83,21 @@ export default class UIScene extends Phaser.Scene {
       .setVisible(false);
 
     const gameScene = this.scene.get('GameScene');
+
+    this.add
+      .text(w - 62, 5, 'II', {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: '7px',
+        color: '#ffffff',
+        backgroundColor: '#285878',
+        padding: { x: 9, y: 6 },
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(101)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => gameScene.togglePause());
+
     gameScene.events.on('updateHUD', this.onUpdateHUD, this);
     gameScene.events.on('levelComplete', this.onLevelComplete, this);
     gameScene.events.on('gameOver', this.onGameOver, this);
@@ -94,18 +114,17 @@ export default class UIScene extends Phaser.Scene {
   }
 
   onPowerUpCollected(data) {
-    if (data.type === 'doubleJump') {
-      this.hasDoubleJump = true;
-      this.doubleJumpBadge.setText('✦ 2x JUMP');
-      this.doubleJumpBadge.setVisible(true);
-      this.doubleJumpBadge.setScale(1);
-      this.tweens.add({
-        targets: this.doubleJumpBadge,
-        scale: 1.2,
-        duration: 150,
-        yoyo: true,
-      });
-    }
+    if (data.type === 'doubleJump') this.hasDoubleJump = true;
+    if (data.type === 'glide') this.hasGlide = true;
+    this.doubleJumpBadge.setText(this.abilityText());
+    this.doubleJumpBadge.setVisible(true);
+    this.doubleJumpBadge.setScale(1);
+    this.tweens.add({
+      targets: this.doubleJumpBadge,
+      scale: 1.2,
+      duration: 150,
+      yoyo: true,
+    });
   }
 
   onUpdateHUD(data) {
@@ -119,7 +138,8 @@ export default class UIScene extends Phaser.Scene {
     this.starsTotal = data.starsTotal;
     this.levelName = data.levelName;
     this.hasDoubleJump = data.hasDoubleJump ?? false;
-    this.doubleJumpBadge.setText(this.hasDoubleJump ? '✦ 2x JUMP' : '');
+    this.hasGlide = data.hasGlide ?? false;
+    this.doubleJumpBadge.setText(this.abilityText());
     if (data.levelIndex !== undefined) this.levelIndex = data.levelIndex;
 
     this.refreshHUD();
@@ -144,17 +164,8 @@ export default class UIScene extends Phaser.Scene {
     this.scoreText.setText(`${this.score}`);
     this.starText.setText(`★ ${this.starsCollected}/${this.starsTotal}`);
     if (this.doubleJumpBadge) {
-      this.doubleJumpBadge.setVisible(this.hasDoubleJump);
+      this.doubleJumpBadge.setVisible(this.hasDoubleJump || this.hasGlide);
     }
-  }
-
-  starRatingDisplay(stars) {
-    if (stars === 0) return '☆☆☆';
-    let s = '';
-    for (let i = 0; i < 3; i++) {
-      s += i < stars ? '★' : '☆';
-    }
-    return s;
   }
 
   onLevelComplete(data) {
@@ -179,15 +190,29 @@ export default class UIScene extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(201);
 
-      this.add
-        .text(w / 2, h / 2 - 30, this.starRatingDisplay(earnedStars), {
-          fontFamily: '"Press Start 2P", monospace',
-          fontSize: '20px',
-          color: '#ffffaa',
-        })
-        .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(201);
+      // Rating stars pop in one at a time, each earned one with a rising chime.
+      const sfx = this.scene.get('GameScene').sfx;
+      for (let i = 0; i < 3; i++) {
+        const earned = i < earnedStars;
+        const star = this.add
+          .text(w / 2 + (i - 1) * 34, h / 2 - 30, earned ? '★' : '☆', {
+            fontFamily: '"Press Start 2P", monospace',
+            fontSize: '20px',
+            color: earned ? '#ffffaa' : '#8f86b8',
+          })
+          .setOrigin(0.5)
+          .setScrollFactor(0)
+          .setDepth(201)
+          .setScale(0);
+        this.tweens.add({
+          targets: star,
+          scale: 1,
+          duration: 260,
+          delay: 350 + i * 240,
+          ease: 'Back.easeOut',
+          onStart: () => earned && sfx?.play('coin', 2 ** ((i * 4) / 12)),
+        });
+      }
 
       this.add
         .text(w / 2, h / 2 + 10, `Stars: ${data.starsCollected}/${data.starsTotal}`, {
@@ -209,8 +234,8 @@ export default class UIScene extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(201);
 
-      this.add
-        .text(w / 2, h / 2 + 48, `Score: ${data.score}`, {
+      const scoreText = this.add
+        .text(w / 2, h / 2 + 48, 'Score: 0', {
           fontFamily: '"Press Start 2P", monospace',
           fontSize: '8px',
           color: '#ffffff',
@@ -218,6 +243,17 @@ export default class UIScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setScrollFactor(0)
         .setDepth(201);
+
+      this.tweens.addCounter({
+        from: 0,
+        to: data.score,
+        duration: 900,
+        delay: 350,
+        ease: 'Cubic.easeOut',
+        onUpdate: (tween) => {
+          if (scoreText.active) scoreText.setText(`Score: ${Math.round(tween.getValue())}`);
+        },
+      });
 
       const isLastLevel = data.levelIndex >= LEVELS.length - 1;
       const prompt = isLastLevel ? 'ENTER — Victory!' : 'ENTER — World Map';

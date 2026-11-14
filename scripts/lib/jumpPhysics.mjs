@@ -14,7 +14,7 @@
  * geometry, not a frame-accurate simulation. Callers should apply a safety
  * margin before treating a level design as "safe".
  */
-import { GRAVITY, JUMP_VELOCITY, PLAYER_SPEED } from '../../src/utils/constants.js';
+import { GRAVITY, JUMP_VELOCITY, PLAYER_SPEED, GLIDE_TIME } from '../../src/utils/constants.js';
 
 const DOUBLE_JUMP_MULTIPLIER = 0.9; // matches Player.js grantDoubleJump/stompBounce scaling
 
@@ -50,4 +50,22 @@ export function maxDoubleJumpRangePx(deltaY) {
   const t2 = timeToReach(secondV0, deltaY + apexHeight);
   if (t2 === null) return null;
   return PLAYER_SPEED * (t1 + t2);
+}
+
+/**
+ * Max horizontal distance (px) for a single jump plus a full glide. The glide
+ * is treated as pure extra airtime at run speed; the slower fall it also gives
+ * is ignored, which keeps this estimate on the cautious side.
+ */
+export function maxGlideRangePx(deltaY) {
+  const base = maxSingleJumpRangePx(deltaY);
+  return base === null ? null : base + (PLAYER_SPEED * GLIDE_TIME) / 1000;
+}
+
+/**
+ * Scales a jump range for wind blowing along the jump: `windVx` is the
+ * sideways push in px/s, negative for a headwind when travelling right.
+ */
+export function windAdjustedRangePx(rangePx, windVx) {
+  return rangePx * Math.max(0, (PLAYER_SPEED + windVx) / PLAYER_SPEED);
 }

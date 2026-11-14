@@ -39,4 +39,7 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// Dev-only handle for driving the game from the console or test tools.
+if (import.meta.env.DEV) window.__skyHop = game;
+
 export default game;

@@ -4,9 +4,12 @@ import Puffling from '../entities/Puffling.js';
 import Wisp from '../entities/Wisp.js';
 import MovingPlatform from '../entities/MovingPlatform.js';
 import PowerUp from '../entities/PowerUp.js';
+import CrumblingPlatform from '../entities/CrumblingPlatform.js';
 import TouchControls from '../entities/TouchControls.js';
 import Sfx from '../utils/sfx.js';
-import { skyTexture } from '../utils/sky.js';
+import { addSkyLayers, zoneIndex } from '../utils/sky.js';
+import { playZoneMusic } from '../utils/music.js';
+import { frameFor, undersideRuns, SOLID_FRAMES } from '../utils/autotile.js';
 import { hasVisitedLevel } from '../utils/SaveManager.js';
 import {
   TILE_SIZE,
@@ -14,6 +17,9 @@ import {
   MAX_LIVES,
   STAR_SCORE,
   LEVELS,
+  CAMERA_ZOOM,
+  CAMERA_LOOKAHEAD,
+  CAMERA_BOTTOM_PAD,
 } from '../utils/constants.js';
 
 export default class GameScene extends Phaser.Scene {
@@ -39,7 +45,9 @@ export default class GameScene extends Phaser.Scene {
     const levelKey = LEVELS[this.levelIndex];
     this.levelData = this.cache.json.get(levelKey);
 
+    this.setupCameras();
     this.setupParallax();
+    playZoneMusic(this, zoneIndex(this.levelIndex));
     this.buildLevel();
     this.spawnEntities();
     this.setupCollisions();
@@ -60,7 +68,7 @@ export default class GameScene extends Phaser.Scene {
     const hint = this.levelData.hint || '';
     const firstVisit = !hasVisitedLevel(this.levelIndex);
 
-    const banner = this.add.container(w / 2, h / 2).setScrollFactor(0).setDepth(50);
+    const banner = this.add.container(w / 2, h / 2 - 40).setScrollFactor(0).setDepth(50);
     const bg = this.add.rectangle(0, 0, w, 60, 0x1a0a2e, 0.85);
     const title = this.add
       .text(0, -8, this.levelData.name, {
@@ -82,6 +90,7 @@ export default class GameScene extends Phaser.Scene {
       banner.add(hintText);
     }
 
+    this.asUI(banner);
     banner.setAlpha(0);
     this.tweens.add({
       targets: banner,
@@ -93,14 +102,79 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Two cameras: the main one is zoomed in on the world, and an unzoomed one
+   * draws screen-space UI (banner, pause menu, touch buttons). Everything is
+   * hidden from the UI camera as it is added; `asUI` flips an object over.
+   */
+  setupCameras() {
+    this.cameras.main.setZoom(CAMERA_ZOOM);
+    this.uiCam = this.cameras.add(0, 0, this.scale.width, this.scale.height).setName('ui');
+    const hideFromUI = (obj) => this.uiCam.ignore(obj);
+    this.events.on('addedtoscene', hideFromUI);
+    this.events.once('shutdown', () => this.events.off('addedtoscene', hideFromUI));
+    this.lookX = 0;
+    this.combo = 0;
+    this.lastStarAt = -Infinity;
+    this.hitStopping = false;
+  }
+
+  /** Marks an object (and a container's children) as screen-space UI. */
+  asUI(obj) {
+    const mainId = this.cameras.main.id;
+    const mark = (o) => {
+      o.cameraFilter = mainId;
+      o.list?.forEach(mark);
+    };
+    mark(obj);
+    return obj;
+  }
+
   setupParallax() {
+    addSkyLayers(this, this.levelIndex, CAMERA_ZOOM);
+
+    // Weather pinned to the view: rain in Storm Pass, drifting motes by day,
+    // fireflies from twilight on.
     const w = this.scale.width;
     const h = this.scale.height;
-
-    this.bgSky = this.add.image(0, 0, skyTexture(this.levelIndex)).setOrigin(0).setDisplaySize(w, h).setScrollFactor(0).setDepth(-10);
-    this.bgClouds = this.add.tileSprite(0, 0, w, h, 'bg-clouds-far').setOrigin(0).setScrollFactor(0).setDepth(-9).setAlpha(0.7);
-    this.bgIslands = this.add.tileSprite(0, 0, w, h, 'bg-islands').setOrigin(0).setScrollFactor(0).setDepth(-8).setAlpha(0.5);
-    this.bgMist = this.add.tileSprite(0, 0, w, h, 'bg-mist').setOrigin(0).setScrollFactor(0).setDepth(-7).setAlpha(0.6);
+    const zone = zoneIndex(this.levelIndex);
+    const view = {
+      x: { min: w * (0.5 - 0.5 / CAMERA_ZOOM), max: w * (0.5 + 0.6 / CAMERA_ZOOM) },
+      y: { min: h * (0.5 - 0.5 / CAMERA_ZOOM), max: h * (0.5 + 0.5 / CAMERA_ZOOM) },
+    };
+    if (zone === 1) {
+      this.add
+        .particles(0, 0, 'streak', {
+          x: view.x,
+          y: { min: view.y.min - 20, max: view.y.min },
+          speedX: -70,
+          speedY: 330,
+          rotate: 102,
+          scaleX: { min: 0.5, max: 1 },
+          alpha: { start: 0.45, end: 0.15 },
+          tint: 0xcfe0ff,
+          lifespan: 800,
+          frequency: 28,
+        })
+        .setScrollFactor(0)
+        .setDepth(7);
+      return;
+    }
+    const dusk = zone >= 2;
+    this.add
+      .particles(0, 0, 'spark', {
+        x: view.x,
+        y: view.y,
+        speedX: { min: -9, max: -3 },
+        speedY: { min: -4, max: 4 },
+        scale: { min: 0.25, max: 0.5 },
+        alpha: { start: dusk ? 0.9 : 0.5, end: 0 },
+        tint: dusk ? 0xfff2a0 : 0xffffff,
+        lifespan: 5000,
+        frequency: dusk ? 350 : 550,
+      })
+      .setScrollFactor(0)
+      .setDepth(-5);
   }
 
   buildLevel() {
@@ -120,15 +194,16 @@ export default class GameScene extends Phaser.Scene {
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        const tile = tiles[y][x];
-        if (tile > 0) {
-          this.groundLayer.putTileAt(tile - 1, x, y);
+        const frame = frameFor(tiles, x, y);
+        if (frame >= 0) {
+          this.groundLayer.putTileAt(frame, x, y);
         }
       }
     }
 
-    this.groundLayer.setCollision([TILE.GRASS - 1, TILE.STONE - 1]);
+    this.groundLayer.setCollision(SOLID_FRAMES);
     this.groundLayer.setDepth(0);
+    this.drawUndersides();
 
     this.spikeTiles = [];
     for (let y = 0; y < height; y++) {
@@ -136,6 +211,42 @@ export default class GameScene extends Phaser.Scene {
         if (tiles[y][x] === TILE.SPIKE) {
           this.spikeTiles.push({ x: x * TILE_SIZE + TILE_SIZE / 2, y: y * TILE_SIZE + TILE_SIZE / 2 });
         }
+      }
+    }
+  }
+
+  /**
+   * Hangs rock beneath every island, in stepped 2px rows. Wide islands are
+   * split into several lobes so they read as craggy rather than one wedge.
+   */
+  drawUndersides() {
+    const g = this.add.graphics().setDepth(-1);
+    const lobe = (x0, width, top, seed) => {
+      const depth = Phaser.Math.Clamp(Math.round(width * 0.34), 8, 34);
+      const rows = Math.floor(depth / 2);
+      const lean = 0.38 + (seed % 3) * 0.12;
+      for (let r = 0; r < rows; r++) {
+        const t = (r + 1) / rows;
+        const jitter = ((seed * 5 + r * 3) % 3) - 1;
+        const left = Math.round(width * lean * Math.pow(t, 1.25)) + 2 + jitter;
+        const right = Math.round(width * (1 - lean) * Math.pow(t, 1.5)) + 2 - jitter;
+        const rowWidth = width - left - right;
+        if (rowWidth <= 0) break;
+        g.fillStyle(r < 2 ? 0x5a3428 : 0x4e2c22);
+        g.fillRect(x0 + left, top + r * 2, rowWidth, 2);
+        g.fillStyle(0x6a4030);
+        g.fillRect(x0 + left, top + r * 2, Math.min(2, rowWidth), 2);
+      }
+    };
+    for (const run of undersideRuns(this.levelData.tiles)) {
+      const top = (run.y + 1) * TILE_SIZE;
+      let x = run.xStart;
+      while (x <= run.xEnd) {
+        const remaining = run.xEnd - x + 1;
+        const want = 4 + ((x * 7 + run.y * 3) % 4);
+        const tilesWide = remaining - want < 3 ? remaining : want;
+        lobe(x * TILE_SIZE, tilesWide * TILE_SIZE, top, x + run.y);
+        x += tilesWide;
       }
     }
   }
@@ -164,6 +275,9 @@ export default class GameScene extends Phaser.Scene {
       }
     });
 
+    this.crumbling = (d.crumbling || []).map((c) => new CrumblingPlatform(this, c.x, c.y, c.width));
+    this.setupWind(d.wind || []);
+
     this.powerUps = this.add.group();
     (d.powerUps || []).forEach((pu) => {
       const powerUp = new PowerUp(this, pu.x, pu.y, pu.type);
@@ -171,7 +285,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     this.stars = this.add.group();
-    d.stars.forEach((s) => {
+    d.stars.forEach((s, i) => {
       const star = this.physics.add.sprite(
         s[0] * TILE_SIZE + TILE_SIZE / 2,
         s[1] * TILE_SIZE + TILE_SIZE / 2,
@@ -182,6 +296,15 @@ export default class GameScene extends Phaser.Scene {
       star.body.setAllowGravity(false);
       star.play('star-spin');
       star.setDepth(3);
+      this.tweens.add({
+        targets: star,
+        y: star.y - 3,
+        duration: 900,
+        ease: 'Sine.easeInOut',
+        yoyo: true,
+        repeat: -1,
+        delay: (i % 5) * 140,
+      });
       this.stars.add(star);
     });
 
@@ -205,6 +328,54 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Wind zones push an airborne hero: `fx` is a sideways speed in px/s and
+   * `fy` a vertical acceleration (negative lifts). Streaks show the direction.
+   */
+  setupWind(zones) {
+    this.windZones = zones.map((z) => ({
+      rect: new Phaser.Geom.Rectangle(z.x * TILE_SIZE, z.y * TILE_SIZE, z.w * TILE_SIZE, z.h * TILE_SIZE),
+      x: z.fx || 0,
+      y: z.fy || 0,
+    }));
+    for (const zone of this.windZones) {
+      const updraft = zone.y !== 0;
+      this.add
+        .particles(0, 0, 'streak', {
+          x: { min: zone.rect.left, max: zone.rect.right },
+          y: { min: zone.rect.top, max: zone.rect.bottom },
+          speedX: updraft ? 0 : zone.x * 2.2,
+          speedY: updraft ? -90 : 0,
+          rotate: updraft ? 90 : 0,
+          alpha: { start: 0.55, end: 0 },
+          scaleX: { min: 0.6, max: 1.4 },
+          lifespan: 650,
+          frequency: Math.max(40, 2600 / (zone.rect.width * zone.rect.height / 256)),
+        })
+        .setDepth(6);
+    }
+  }
+
+  /** Combined wind at a world position, or null when the air is still. */
+  windAt(x, y) {
+    let wx = 0;
+    let wy = 0;
+    for (const zone of this.windZones) {
+      if (zone.rect.contains(x, y)) {
+        wx += zone.x;
+        wy += zone.y;
+      }
+    }
+    return wx || wy ? { x: wx, y: wy } : null;
+  }
+
+  glideTrail(x, y) {
+    if (this.time.now - (this.lastGlideTrail ?? 0) < 70) return;
+    this.lastGlideTrail = this.time.now;
+    const dot = this.add.image(x, y, 'spark').setTint(0x9fe8ff).setAlpha(0.8).setScale(0.6).setDepth(9);
+    this.tweens.add({ targets: dot, alpha: 0, y: y - 6, duration: 320, onComplete: () => dot.destroy() });
+  }
+
   setupCollisions() {
     this.physics.add.collider(this.player, this.groundLayer);
     this.physics.add.collider(this.enemies, this.groundLayer);
@@ -214,6 +385,12 @@ export default class GameScene extends Phaser.Scene {
       this.physics.add.collider(this.player, platform);
     });
 
+    this.crumbling.forEach((platform) => {
+      this.physics.add.collider(this.player, platform, () => {
+        if (this.player.body.touching.down && platform.body.touching.up) platform.stepOn();
+      });
+    });
+
     this.physics.add.overlap(this.player, this.enemies, this.handleEnemyOverlap, null, this);
     this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
     this.physics.add.overlap(this.player, this.goalFlag, this.reachGoal, null, this);
@@ -221,8 +398,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupCamera() {
-    this.cameras.main.setBounds(0, 0, this.levelData.width * TILE_SIZE, this.levelData.height * TILE_SIZE);
-    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+    const cam = this.cameras.main;
+    cam.setBounds(0, 0, this.levelData.width * TILE_SIZE, this.levelData.height * TILE_SIZE + CAMERA_BOTTOM_PAD);
+    cam.startFollow(this.player, true, 0.12, 0.12);
+    // Small hops don't move the view; the camera only pans once the hero
+    // leaves this box, which keeps the zoomed-in view calm.
+    cam.setDeadzone(12, 40);
   }
 
   setupInput() {
@@ -240,26 +421,51 @@ export default class GameScene extends Phaser.Scene {
     this.touchControls = null;
     if (this.sys.game.device.input.touch) {
       this.touchControls = new TouchControls(this);
+      this.asUI(this.touchControls.container);
+      ['leftBtn', 'rightBtn', 'jumpBtn'].forEach((k) => this.asUI(this.touchControls[k].zone));
     }
-    this.add.text(this.scale.width - 12, 40, 'II PAUSE', {
-      fontFamily: '"Press Start 2P", monospace', fontSize: '7px',
-      color: '#ffffff', backgroundColor: '#183454', padding: { x: 10, y: 10 },
-    }).setOrigin(1, 0).setScrollFactor(0).setDepth(80)
-      .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.togglePause());
   }
 
   burst(x, y, color, count = 10) {
     const emitter = this.add.particles(x, y, 'spark', {
       tint: color,
-      speed: { min: 60, max: 160 },
-      scale: { start: 1.5, end: 0 },
+      speed: { min: 40, max: 110 },
+      scale: { start: 1, end: 0 },
       alpha: { start: 1, end: 0 },
       lifespan: 350,
-      quantity: count,
+      emitting: false,
     });
     emitter.setDepth(20);
-    emitter.explode(count, x, y);
+    emitter.explode(count);
     this.time.delayedCall(450, () => emitter.destroy());
+  }
+
+  /** Small puff at the hero's feet for jumps, landings and running. */
+  dust(x, y, count = 4) {
+    const emitter = this.add.particles(x, y, 'spark', {
+      tint: 0xf4efe0,
+      speedX: { min: -34, max: 34 },
+      speedY: { min: -26, max: -4 },
+      gravityY: 70,
+      scale: { start: 0.6, end: 0 },
+      alpha: { start: 0.8, end: 0 },
+      lifespan: 280,
+      emitting: false,
+    });
+    emitter.setDepth(9);
+    emitter.explode(count);
+    this.time.delayedCall(360, () => emitter.destroy());
+  }
+
+  /** Freezes the action for a few frames so a stomp lands with weight. */
+  hitStop(ms) {
+    if (this.hitStopping) return;
+    this.hitStopping = true;
+    this.physics.pause();
+    this.time.delayedCall(ms, () => {
+      this.hitStopping = false;
+      if (!this.isPaused && !this.levelComplete) this.physics.resume();
+    });
   }
 
   togglePause() {
@@ -279,7 +485,7 @@ export default class GameScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
 
-    this.pauseOverlay = this.add.rectangle(w / 2, h / 2, w, h, 0x1a0a2e, 0.8).setScrollFactor(0).setDepth(90);
+    this.pauseOverlay = this.asUI(this.add.rectangle(w / 2, h / 2, w, h, 0x1a0a2e, 0.8).setScrollFactor(0).setDepth(90));
     this.pauseContainer = this.add.container(w / 2, h / 2).setScrollFactor(0).setDepth(91);
 
     const title = this.add
@@ -320,6 +526,7 @@ export default class GameScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.pauseContainer.add(controls);
+    this.asUI(this.pauseContainer);
   }
 
   hidePauseMenu() {
@@ -359,6 +566,8 @@ export default class GameScene extends Phaser.Scene {
       this.score += 50;
       this.showScorePopup(player.x, player.y - 20, '+50');
       this.burst(enemy.x, enemy.y, 0xffaa88, 8);
+      this.cameras.main.shake(90, 0.004);
+      this.hitStop(60);
       this.updateHUD();
     } else {
       this.takeDamage();
@@ -369,12 +578,17 @@ export default class GameScene extends Phaser.Scene {
     if (!star.active || this.isPaused || this.levelComplete || player.isDead) return;
     const sx = star.x;
     const sy = star.y;
+    this.tweens.killTweensOf(star);
     star.destroy();
     this.starsCollected++;
     this.score += STAR_SCORE;
     this.showScorePopup(sx, sy - 10, `+${STAR_SCORE}`);
     this.burst(sx, sy, 0xffcc44, 10);
-    this.sfx.play('coin');
+    // Stars grabbed in quick succession climb a scale.
+    const now = this.time.now;
+    this.combo = now - this.lastStarAt < 1500 ? Math.min(this.combo + 1, 7) : 0;
+    this.lastStarAt = now;
+    this.sfx.play('coin', 2 ** ((this.combo * 2) / 12));
     this.updateHUD();
   }
 
@@ -385,6 +599,12 @@ export default class GameScene extends Phaser.Scene {
       this.sfx.play('powerup');
       this.burst(powerUp.x, powerUp.y, 0xff88ff, 10);
       this.events.emit('powerUpCollected', { type: 'doubleJump' });
+    } else if (powerUp.type === 'glide') {
+      player.grantGlide();
+      this.sfx.play('powerup');
+      this.burst(powerUp.x, powerUp.y, 0x9fe8ff, 10);
+      this.showToast('Hold jump to glide!');
+      this.events.emit('powerUpCollected', { type: 'glide' });
     }
     powerUp.collect();
   }
@@ -422,6 +642,7 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(95);
+    this.asUI(toast);
     this.tweens.add({
       targets: toast,
       alpha: 0,
@@ -491,6 +712,7 @@ export default class GameScene extends Phaser.Scene {
       levelName: this.levelData.name,
       levelIndex: this.levelIndex,
       hasDoubleJump: this.player.hasDoubleJump,
+      hasGlide: this.player.hasGlide ?? false,
     };
   }
 
@@ -516,10 +738,11 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
 
-    const scrollX = this.cameras.main.scrollX;
-    this.bgClouds.tilePositionX = scrollX * 0.2 + time * 0.003;
-    this.bgIslands.tilePositionX = scrollX * 0.4;
-    this.bgMist.tilePositionX = scrollX * 0.6;
+    // Look ahead in the direction the hero is running.
+    const moving = Math.abs(this.player.body.velocity.x) > 20;
+    const targetLook = moving ? this.player.facing * CAMERA_LOOKAHEAD : 0;
+    this.lookX += (targetLook - this.lookX) * Math.min(1, delta * 0.004);
+    this.cameras.main.setFollowOffset(-this.lookX, 0);
 
     if (this.player.y > this.levelData.height * TILE_SIZE + 32) {
       this.takeDamage();
@@ -543,6 +766,7 @@ export default class GameScene extends Phaser.Scene {
       if (Math.abs(this.player.x - cpx) < 20 && Math.abs(this.player.y - cpy) < 40) {
         this.checkpoint = cp;
         this.sfx.play('coin');
+        this.burst(cpx, cpy, 0x7fdcbc, 12);
         this.showToast('Checkpoint!');
       }
     }

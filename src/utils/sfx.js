@@ -19,7 +19,8 @@ export default class Sfx {
     }
   }
 
-  play(type) {
+  /** `pitch` multiplies the base frequency (used for the star-streak scale). */
+  play(type, pitch = 1) {
     if (!this.ctx || !this.master || isMuted()) return;
     const t = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
@@ -39,12 +40,31 @@ export default class Sfx {
         break;
       case 'coin':
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, t);
-        osc.frequency.setValueAtTime(1320, t + 0.05);
+        osc.frequency.setValueAtTime(880 * pitch, t);
+        osc.frequency.setValueAtTime(1320 * pitch, t + 0.05);
         gain.gain.setValueAtTime(0.3, t);
         gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
         osc.start(t);
         osc.stop(t + 0.2);
+        break;
+      case 'land':
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(60, t + 0.08);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+        osc.start(t);
+        osc.stop(t + 0.1);
+        break;
+      case 'crack':
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(160, t);
+        osc.frequency.setValueAtTime(110, t + 0.05);
+        osc.frequency.setValueAtTime(140, t + 0.1);
+        gain.gain.setValueAtTime(0.16, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+        osc.start(t);
+        osc.stop(t + 0.18);
         break;
       case 'stomp':
         osc.type = 'triangle';
