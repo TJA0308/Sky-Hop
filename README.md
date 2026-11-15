@@ -13,7 +13,7 @@ skies through lavender twilight to the Sunset Summit.
 
 [![Play Sky Hop](https://img.shields.io/badge/▶_PLAY_SKY_HOP-328fc7?style=for-the-badge)](https://tja0308.github.io/Sky-Hop/)
 [![Build and deploy](https://github.com/TJA0308/Sky-Hop/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/TJA0308/Sky-Hop/actions/workflows/deploy.yml)
-[![Tests: 50](https://img.shields.io/badge/tests-50_passing-54b8a6?style=flat-square)](tests)
+[![Tests: 61](https://img.shields.io/badge/tests-61_passing-54b8a6?style=flat-square)](tests)
 [![License: MIT](https://img.shields.io/badge/license-MIT-ffd34e?style=flat-square)](LICENSE)
 
 [Play](https://tja0308.github.io/Sky-Hop/) ·
@@ -27,6 +27,27 @@ skies through lavender twilight to the Sunset Summit.
 > [!TIP]
 > The animated scene above is illustrative pixel art built from Sky Hop's palette
 > and game motifs. Click it—or any **Play** button—to launch the real game.
+
+## Watch the bot play
+
+<a href="https://tja0308.github.io/Sky-Hop/">
+  <img src="docs/media/sky-hop-bot.gif" alt="The Sky Hop bot running, jumping and stomping its way through Gap Runner with no human input" width="640">
+</a>
+
+That is real gameplay with nobody at the keyboard. Sky Hop ships with a bot
+that works out its own route: a headless copy of the game's physics
+([`src/bot/sim.js`](src/bot/sim.js)) lets an A* search
+([`src/bot/solver.js`](src/bot/solver.js)) try thousands of button sequences
+in a few milliseconds, and a controller replays the winner in the real game,
+planning again whenever reality drifts from the simulation. Pause on levels
+1–3 and choose **Watch the Bot**.
+
+The same solver runs in the build: if a level change makes one of those levels
+unbeatable, the build fails.
+
+| Storm Pass | Twilight Peaks | Glide feather |
+| :---: | :---: | :---: |
+| <img src="docs/media/sky-hop-storm.png" alt="Rain, dark clouds and wind streaks in Wind Crossing" width="310"> | <img src="docs/media/sky-hop-aurora.png" alt="An aurora over crumbling stone platforms in Sky Fortress" width="310"> | <img src="docs/media/sky-hop-glide.png" alt="The hero gliding across the final gap of Final Approach" width="310"> |
 
 ## Explore the world
 
@@ -66,6 +87,7 @@ level's stars to earn one, two, or three rating stars.
 | --- | --- |
 | **← / →** or **A / D** | Move |
 | **Space**, **W**, or **↑** | Jump; hold for more height |
+| Hold jump while falling | Glide, once you have the feather |
 | Release, then press jump again | Double jump after collecting a sparkle |
 | **Esc / P** or **Pause** | Pause |
 | **R** during a level | Restart with a fresh score and three lives |
@@ -90,11 +112,15 @@ cleared; sound preferences remain. **Back / Cancel** or **Esc** keeps the save.
 ## What makes it hop
 
 - **Ten handcrafted levels** generated from deterministic map definitions.
-- **Four procedural skies** spanning daytime blue, high clouds, twilight, and sunset.
+- **A bot that beats the game by itself** using a physics simulator and A* search.
+- **Layered parallax skies**: clear day, a storm with rain and lightning, an
+  aurora at twilight, and a sunset finale.
 - **Responsive movement** with variable jump height, coyote time, and jump buffering.
 - **Double jumps, moving platforms, checkpoints, Pufflings, and Wisps.**
+- **Wind gusts, crumbling stone, and a glide feather** that turn later levels
+  into a game about air, not just jumping.
 - **Replayable progression** with unlocks, ratings, and browser-local best scores.
-- **Procedural pixel art and Web Audio effects** with no downloaded art pack.
+- **Procedural pixel art, sound effects, and music** with no downloaded assets.
 - **Keyboard and touch support** in a static game with no account or backend.
 
 <div align="center">
@@ -118,10 +144,12 @@ points. Those findings became fixes and permanent tests.
 src/
   scenes/       Boot, menus, world map, gameplay, and HUD
   entities/     Player, enemies, platforms, power-ups, and touch input
-  utils/        Physics constants, procedural skies, saves, and sound
+  bot/          Headless simulator, A* solver, and in-game bot controller
+  utils/        Physics constants, skies, autotiling, saves, sound, and music
 scripts/
   generate-levels.mjs    Source of truth for level geometry
   validate-levels.mjs    Jump, platform, entity, and patrol checks
+  solve-levels.mjs       Bot plays every level it supports; fails if stuck
 public/assets/tilemaps/  Generated maps loaded by the game
 tests/                   Save, physics, level, and scene regressions
 docs/                    Development notes and release evidence
@@ -136,10 +164,16 @@ against the same physics constants used at runtime.
 <details>
 <summary><strong>Quality and verification</strong></summary>
 
-- The campaign has been manually played successfully.
-- All ten generated levels pass geometry and entity-placement validation.
-- 50 automated tests cover saves, resets, jump calculations, authored maps,
-  attempt lifecycle, HUD state, and overlay transitions.
+- Levels 1–3 are beaten by the bot on every build, and the bot has been
+  watched clearing each of them in the real game without losing a life.
+- All ten generated levels pass geometry and entity-placement validation,
+  which accounts for glide range, headwinds, and crumbling platforms.
+- 61 automated tests cover saves, resets, jump calculations, authored maps,
+  autotiling, the simulator and solver, attempt lifecycle, HUD state, and
+  overlay transitions.
+- Version 1.0 was played start to finish by hand. Levels 6–10 changed in 1.1;
+  each new mechanic was exercised in the browser, but those levels have not
+  yet been replayed end to end.
 - Pull requests run lint, production build, tests, and map-drift checks.
 - Pushes to `main` deploy the verified build to GitHub Pages.
 
@@ -172,7 +206,8 @@ On Windows PowerShell, use `npm.cmd` if execution policy blocks `npm.ps1`.
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Generate and validate maps, then start Vite |
-| `npm run build` | Generate and validate maps, then build `dist/` |
+| `npm run build` | Generate, validate and solve maps, then build `dist/` |
+| `npm run solve-levels` | Have the bot beat every level it supports |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Check JavaScript |
 | `npm test` | Run all regressions |

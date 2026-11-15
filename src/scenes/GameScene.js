@@ -5,6 +5,8 @@ import Wisp from '../entities/Wisp.js';
 import MovingPlatform from '../entities/MovingPlatform.js';
 import PowerUp from '../entities/PowerUp.js';
 import CrumblingPlatform from '../entities/CrumblingPlatform.js';
+import BotController from '../bot/BotController.js';
+import { botSupports } from '../bot/sim.js';
 import TouchControls from '../entities/TouchControls.js';
 import Sfx from '../utils/sfx.js';
 import { addSkyLayers, zoneIndex } from '../utils/sky.js';
@@ -37,6 +39,8 @@ export default class GameScene extends Phaser.Scene {
     this.levelComplete = false;
     this.checkpoint = null;
     this.fromMap = data.fromMap ?? true;
+    this.botRequested = data.bot ?? false;
+    this.bot = null;
   }
 
   create() {
@@ -60,6 +64,23 @@ export default class GameScene extends Phaser.Scene {
     this.updateHUD();
 
     this.showLevelIntro();
+
+    if (this.botRequested && botSupports(this.levelData)) {
+      this.bot = new BotController(this);
+      this.asUI(
+        this.add
+          .text(this.scale.width / 2, 36, 'BOT PLAYING  -  R to take over', {
+            fontFamily: '"Press Start 2P", monospace',
+            fontSize: '6px',
+            color: '#9fe8ff',
+            backgroundColor: '#1a0a2ecc',
+            padding: { x: 6, y: 4 },
+          })
+          .setOrigin(0.5, 0)
+          .setScrollFactor(0)
+          .setDepth(80)
+      );
+    }
   }
 
   showLevelIntro() {
@@ -501,11 +522,17 @@ export default class GameScene extends Phaser.Scene {
       { label: 'Restart Level', action: () => this.restartLevel() },
       { label: 'Quit to Map', action: () => this.quitToMap() },
     ];
+    // The bot can only play levels made of mechanics its simulator models.
+    if (this.bot) {
+      items.splice(2, 0, { label: 'Play It Yourself', action: () => this.restartLevel() });
+    } else if (botSupports(this.levelData)) {
+      items.splice(2, 0, { label: 'Watch the Bot', action: () => this.restartLevel(true) });
+    }
 
     this.pauseContainer.add(title);
     items.forEach((item, i) => {
       const txt = this.add
-        .text(0, -10 + i * 28, item.label, {
+        .text(0, -26 + i * 26, item.label, {
           fontFamily: '"Press Start 2P", monospace',
           fontSize: '8px',
           color: '#ffffff',
@@ -519,7 +546,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     const controls = this.add
-      .text(0, 80, '← → Move   SPACE Jump   F Fullscreen', {
+      .text(0, 86, '← → Move   SPACE Jump   F Fullscreen', {
         fontFamily: '"Press Start 2P", monospace',
         fontSize: '5px',
         color: '#ccaaee',
@@ -536,11 +563,13 @@ export default class GameScene extends Phaser.Scene {
     this.pauseContainer = null;
   }
 
-  restartLevel() {
+  restartLevel(bot = false) {
     this.hidePauseMenu();
     this.isPaused = false;
     this.physics.resume();
-    this.scene.restart({ levelIndex: this.levelIndex, score: this.startingScore, lives: MAX_LIVES, fromMap: this.fromMap });
+    const data = { levelIndex: this.levelIndex, score: this.startingScore, lives: MAX_LIVES, fromMap: this.fromMap };
+    if (bot) data.bot = true;
+    this.scene.restart(data);
   }
 
   quitToMap() {
@@ -662,6 +691,7 @@ export default class GameScene extends Phaser.Scene {
     this.sfx.play('win');
 
     this.events.emit('levelComplete', {
+      bot: Boolean(this.bot),
       levelIndex: this.levelIndex,
       score: this.score,
       starsCollected: this.starsCollected,

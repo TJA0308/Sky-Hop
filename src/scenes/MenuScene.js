@@ -141,11 +141,11 @@ export default class MenuScene extends Phaser.Scene {
   showHowToPlay() {
     this.showInfoPanel('HOW TO PLAY', [
       '← → or A D — Move',
-      'SPACE / W / ↑ — Jump',
-      'Hold jump for higher leaps',
+      'SPACE / W / ↑ — Jump (hold = higher)',
       'Stomp enemies from above',
-      'Collect ★ stars for points',
-      'Reach the flag to win',
+      'Collect ★ stars, reach the flag',
+      'Feather: hold jump to glide',
+      'Levels 1-3: pause to Watch the Bot',
       'Esc / P — Pause menu',
       'R — Restart level',
       'Touch: use buttons and tap Pause',

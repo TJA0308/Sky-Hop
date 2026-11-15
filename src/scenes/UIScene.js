@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { LEVELS, MAX_LIVES } from '../utils/constants.js';
-import { recordLevelComplete, getTotalProgress } from '../utils/SaveManager.js';
+import { recordLevelComplete, calcStars, getTotalProgress } from '../utils/SaveManager.js';
 
 export default class UIScene extends Phaser.Scene {
   constructor() {
@@ -169,19 +169,17 @@ export default class UIScene extends Phaser.Scene {
   }
 
   onLevelComplete(data) {
-    const earnedStars = recordLevelComplete(
-      data.levelIndex,
-      data.score,
-      data.starsCollected,
-      data.starsTotal
-    );
+    // A bot run is a demo: it shows the rating but never touches the save.
+    const earnedStars = data.bot
+      ? calcStars(data.starsCollected, data.starsTotal)
+      : recordLevelComplete(data.levelIndex, data.score, data.starsCollected, data.starsTotal);
 
     this.showOverlay(() => {
       const w = this.scale.width;
       const h = this.scale.height;
 
       this.add
-        .text(w / 2, h / 2 - 70, 'LEVEL CLEAR!', {
+        .text(w / 2, h / 2 - 70, data.bot ? 'BOT CLEAR!' : 'LEVEL CLEAR!', {
           fontFamily: '"Press Start 2P", monospace',
           fontSize: '16px',
           color: '#ffcc44',

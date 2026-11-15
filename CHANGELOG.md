@@ -3,6 +3,24 @@
 Changes are grouped by shipped behavior. Commit references identify deployments;
 they do not imply a tagged release.
 
+## 1.1.0 — The bot, and a finale that uses everything — 2026-11-15
+
+### Added
+
+- A bot that plays levels 1–3 without help. `src/bot/sim.js` is a headless
+  copy of the game's rules, `src/bot/solver.js` runs A* search over it, and
+  `BotController` replays the plan in the real game, replanning when the hero
+  or an enemy drifts from what the simulation predicted. Choose
+  **Watch the Bot** from the pause menu. Bot runs never change the save.
+- `npm run solve-levels`, chained into `npm run build`: the build fails if the
+  bot cannot beat a level it supports.
+- Squash and stretch, a trailing scarf, and a tilted glide pose for the hero.
+  The visible sprite is now separate from the collision box, so none of this
+  affects physics.
+- Crumbling stone in level 7; wind, crumbling stone, an updraft and the glide
+  feather in level 10, whose final gap is longer.
+- Gameplay GIF and screenshots in the README.
+
 ## Wind, crumbling stone and gliding — 2026-11-14
 
 ### Added

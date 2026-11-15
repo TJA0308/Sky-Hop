@@ -373,7 +373,7 @@ function buildLevel7() {
   fillGround(tiles, groundY, 118, 129);
   fillGround(tiles, groundY - 1, 24, 32);
   fillGround(tiles, groundY - 2, 42, 50);
-  fillGround(tiles, groundY - 1, 60, 68);
+  // 60-67 is crumbling stone (see `crumbling` below).
   fillGround(tiles, groundY - 2, 78, 86);
   fillGround(tiles, groundY - 1, 96, 104);
 
@@ -388,11 +388,15 @@ function buildLevel7() {
     checkpoint: null,
     hint: 'Grab the sparkle first! Double-jump across gaps; stomp Wisps.',
     powerUps: [{ x: 14, y: 12, type: 'doubleJump' }],
+    crumbling: [
+      { x: 60, y: 12, width: 3 },
+      { x: 65, y: 12, width: 3 },
+    ],
     stars: [
       [4, 12], [8, 12], [12, 12],
       [28, 10], [32, 10], [36, 10],
       [46, 9], [50, 9],
-      [64, 10], [68, 10],
+      [61, 10], [66, 10],
       [82, 9], [86, 9],
       [100, 10], [104, 10],
       [112, 12], [118, 12], [124, 11],
@@ -537,7 +541,8 @@ function buildLevel10() {
   const groundY = 14;
 
   fillGround(tiles, groundY, 0, 16);
-  fillGround(tiles, groundY, 148, 159);
+  // Final gap (141-151) is long: double jump, then glide with the feather.
+  fillGround(tiles, groundY, 152, 159);
   fillGround(tiles, groundY - 1, 18, 20);
   fillGround(tiles, groundY - 1, 22, 28);
   fillGround(tiles, groundY - 2, 36, 42);
@@ -546,7 +551,7 @@ function buildLevel10() {
   fillGround(tiles, groundY - 4, 78, 84);
   fillGround(tiles, groundY - 2, 92, 98);
   fillGround(tiles, groundY - 3, 106, 112);
-  fillGround(tiles, groundY - 2, 120, 126);
+  // 120-125 is crumbling stone (see `crumbling` below).
   fillGround(tiles, groundY - 1, 134, 140);
 
   addSpikes(tiles, groundY, 30, 32);
@@ -564,8 +569,19 @@ function buildLevel10() {
     spawn: { x: 2, y: 13 },
     goal: { x: 156, y: 12 },
     checkpoint: { x: 80, y: 9 },
-    hint: 'Find the sparkle before the final climb!',
-    powerUps: [{ x: 66, y: 11, type: 'doubleJump' }],
+    hint: 'Wind, stone and feather — everything you have learned!',
+    powerUps: [
+      { x: 66, y: 11, type: 'doubleJump' },
+      { x: 137, y: 12, type: 'glide' },
+    ],
+    crumbling: [
+      { x: 120, y: 12, width: 2 },
+      { x: 124, y: 12, width: 2 },
+    ],
+    wind: [
+      { x: 30, y: 3, w: 2, h: 11, fy: -1400 },
+      { x: 85, y: 2, w: 7, h: 11, fx: -45 },
+    ],
     movingPlatforms: [
       { x: 16, y: 11, distance: 4, axis: 'x', speed: 45 },
       { x: 44, y: 10, distance: 3, axis: 'y', speed: 38 },
@@ -575,11 +591,11 @@ function buildLevel10() {
     ],
     stars: [
       [4, 13], [8, 13], [12, 13],
-      [24, 11], [28, 11], [38, 10], [42, 10],
+      [24, 11], [28, 11], [31, 6], [31, 4], [38, 10], [42, 10],
       [52, 9], [56, 9], [66, 10], [70, 10],
       [80, 8], [84, 8], [94, 10], [98, 10],
       [108, 9], [112, 9], [122, 10], [126, 10],
-      [136, 11], [140, 11], [146, 13], [152, 12], [156, 12],
+      [135, 11], [140, 11], [146, 10], [153, 12], [156, 12],
     ],
     enemies: [
       { x: 10, y: 13, patrol: 3, type: 'puffling' },
@@ -590,7 +606,6 @@ function buildLevel10() {
       { x: 82, y: 7, patrol: 2, type: 'wisp' },
       { x: 96, y: 10, patrol: 3, type: 'puffling' },
       { x: 110, y: 8, patrol: 2, type: 'wisp' },
-      { x: 124, y: 10, patrol: 3, type: 'puffling' },
       { x: 142, y: 11, patrol: 3, type: 'wisp' },
     ],
   });

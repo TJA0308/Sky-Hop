@@ -45,6 +45,16 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.lastVy = 0;
     this.runDustTimer = 0;
 
+    // The physics sprite itself is hidden. What you see is `visual`, a twin
+    // that follows it, so squash and stretch never touch the collision box.
+    this.setVisible(false);
+    this.visual = scene.add.sprite(x, y + 8, 'player', 0).setOrigin(0.5, 1).setDepth(10);
+    this.scarf = scene.add.graphics().setDepth(9);
+    this.scarfPoints = [0, 1, 2, 3].map(() => ({ x, y }));
+    const sync = () => this.syncVisual();
+    scene.events.on('postupdate', sync);
+    scene.events.once('shutdown', () => scene.events.off('postupdate', sync));
+
     this.cursors = scene.input.keyboard.createCursorKeys();
     this.keys = scene.input.keyboard.addKeys({
       A: Phaser.Input.Keyboard.KeyCodes.A,
@@ -54,6 +64,65 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     });
 
     this.play('player-idle');
+  }
+
+  // Appearance calls are forwarded to the visible twin.
+  play(key, ignoreIfPlaying) {
+    this.visual.play(key, ignoreIfPlaying);
+    return this;
+  }
+
+  setFlipX(value) {
+    this.visual.setFlipX(value);
+    return this;
+  }
+
+  setTint(color) {
+    this.visual.setTint(color);
+    return this;
+  }
+
+  clearTint() {
+    this.visual.clearTint();
+    return this;
+  }
+
+  setAlpha(value) {
+    this.visual.setAlpha(value);
+    return this;
+  }
+
+  /** Snap to a squashed or stretched shape, then ease back to normal. */
+  squash(scaleX, scaleY) {
+    this.scene.tweens.killTweensOf(this.visual);
+    this.visual.setScale(scaleX, scaleY);
+    this.scene.tweens.add({ targets: this.visual, scaleX: 1, scaleY: 1, duration: 160, ease: 'Quad.easeOut' });
+  }
+
+  /** Runs after physics each frame: place the twin and trail the scarf. */
+  syncVisual() {
+    this.visual.setPosition(this.x, this.y + 8);
+    this.visual.setAngle(this.isGliding ? this.facing * -12 : 0);
+
+    const rising = this.body.velocity.y < -40;
+    const lift = this.isGliding ? -2 : rising ? 2 : 0.5;
+    let anchorX = this.x - this.facing * 3;
+    let anchorY = this.y - 1;
+    this.scarf.clear();
+    if (this.isDead) return;
+    this.scarfPoints.forEach((point, i) => {
+      const targetX = anchorX - this.facing * 2.5;
+      const targetY = anchorY + lift;
+      // Snap if the hero teleported (respawn), otherwise trail behind.
+      const far = Math.abs(targetX - point.x) + Math.abs(targetY - point.y) > 40;
+      const ease = far ? 1 : 0.45 - i * 0.07;
+      point.x += (targetX - point.x) * ease;
+      point.y += (targetY - point.y) * ease;
+      this.scarf.fillStyle(i < 2 ? 0xffd34e : 0xe0a030, this.visual.alpha);
+      this.scarf.fillRect(Math.round(point.x) - 1, Math.round(point.y) - 1, 3, 2);
+      anchorX = point.x;
+      anchorY = point.y;
+    });
   }
 
   grantGlide() {
@@ -91,6 +160,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const onGround = this.body.blocked.down || this.body.touching.down;
     const platformVx = this.ridingPlatform?.body.velocity.x ?? 0;
     if (onGround && !this.wasOnGround && this.lastVy > 140) {
+      this.squash(1.3, 0.72);
       this.scene.dust?.(this.x, this.body.bottom, 6);
       this.scene.sfx?.play('land');
     }
@@ -105,17 +175,23 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.coyoteTimer = Math.max(0, this.coyoteTimer - delta);
     }
 
+    // When the bot is driving, its inputs replace the keyboard and touch. It
+    // decides here, right before they are read, so there is no frame of lag.
+    this.scene.bot?.update();
+    const bot = this.scene.bot?.input;
     const touch = this.scene.touchControls;
-    const left = this.cursors.left.isDown || this.keys.A.isDown || (touch?.left ?? false);
-    const right = this.cursors.right.isDown || this.keys.D.isDown || (touch?.right ?? false);
-    const jumpPressed =
-      Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
-      Phaser.Input.Keyboard.JustDown(this.keys.W) ||
-      Phaser.Input.Keyboard.JustDown(this.keys.SPACE) ||
-      (touch?.consumeJumpPress() ?? false);
+    const left = bot ? bot.left : this.cursors.left.isDown || this.keys.A.isDown || (touch?.left ?? false);
+    const right = bot ? bot.right : this.cursors.right.isDown || this.keys.D.isDown || (touch?.right ?? false);
+    const jumpPressed = bot
+      ? bot.consumeJumpPress()
+      : Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
+        Phaser.Input.Keyboard.JustDown(this.keys.W) ||
+        Phaser.Input.Keyboard.JustDown(this.keys.SPACE) ||
+        (touch?.consumeJumpPress() ?? false);
 
-    const jumpHeld =
-      this.cursors.up.isDown || this.keys.W.isDown || this.keys.SPACE.isDown || (touch?.jumpHeld ?? false);
+    const jumpHeld = bot
+      ? bot.jump
+      : this.cursors.up.isDown || this.keys.W.isDown || this.keys.SPACE.isDown || (touch?.jumpHeld ?? false);
 
     if (jumpPressed) {
       this.jumpBufferTimer = JUMP_BUFFER;
@@ -147,12 +223,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.coyoteTimer = 0;
         this.jumpBufferTimer = 0;
         this.scene.sfx?.play('jump');
+        this.squash(0.78, 1.25);
         this.scene.dust?.(this.x, this.body.bottom, 4);
       } else if (this.hasDoubleJump && !this.doubleJumpUsed && !onGround) {
         this.setVelocityY(JUMP_VELOCITY * 0.9);
         this.doubleJumpUsed = true;
         this.jumpBufferTimer = 0;
         this.scene.sfx?.play('jump');
+        this.squash(0.8, 1.22);
         this.scene.burst?.(this.x, this.body.bottom, 0xff88ff, 6);
       }
     }
@@ -197,6 +275,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   stompBounce() {
+    this.squash(0.82, 1.2);
     this.setVelocityY(STOMP_BOUNCE);
     this.doubleJumpUsed = false;
   }
