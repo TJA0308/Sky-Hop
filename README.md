@@ -3,13 +3,13 @@
 <div align="center">
 
 <a href="https://tja0308.github.io/Sky-Hop/">
-  <img src="docs/media/sky-hop-hero.svg" alt="Animated pixel-art scene: the Sky Hop hero jumps across floating islands toward a star and the summit flag" width="960">
+  <img src="docs/media/sky-hop-hero.gif" alt="Sky Hop gameplay: the bot clears a level by itself, then the hero rides wind gusts in a storm, crosses crumbling stone under an aurora, and glides to the flag" width="800">
 </a>
 
 ### A tiny adventure above the clouds
 
-Cross ten floating-island levels, chase every star, and climb from clear blue
-skies through lavender twilight to the Sunset Summit.
+Cross ten floating-island levels through storms, wind and crumbling stone,
+glide to the Sunset Summit, or sit back and watch the built-in bot play.
 
 [![Play Sky Hop](https://img.shields.io/badge/▶_PLAY_SKY_HOP-328fc7?style=for-the-badge)](https://tja0308.github.io/Sky-Hop/)
 [![Build and deploy](https://github.com/TJA0308/Sky-Hop/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/TJA0308/Sky-Hop/actions/workflows/deploy.yml)
@@ -17,6 +17,7 @@ skies through lavender twilight to the Sunset Summit.
 [![License: MIT](https://img.shields.io/badge/license-MIT-ffd34e?style=flat-square)](LICENSE)
 
 [Play](https://tja0308.github.io/Sky-Hop/) ·
+[Watch the bot](#watch-the-bot-play) ·
 [How to play](#how-to-play) ·
 [Explore the world](#explore-the-world) ·
 [How it was built](#behind-the-clouds) ·
@@ -24,9 +25,17 @@ skies through lavender twilight to the Sunset Summit.
 
 </div>
 
-> [!TIP]
-> The animated scene above is illustrative pixel art built from Sky Hop's palette
-> and game motifs. Click it—or any **Play** button—to launch the real game.
+> [!NOTE]
+> Everything above is real gameplay captured from the game: no mock-ups. The
+> first clip is the bot playing with nobody at the keyboard.
+
+## At a glance
+
+| | |
+| --- | --- |
+| **Built with** | JavaScript, Phaser 3, Vite, Vitest |
+| **Assets** | None downloaded: art, sound and music are generated in code |
+| **Engineering highlights** | A physics simulator with A* search that beats levels by itself, build-time level validation, 61 automated tests, CI and automatic deploys |
 
 ## Watch the bot play
 
@@ -137,6 +146,14 @@ alone was not enough: a collectible sat inside terrain, a checkpoint respawned
 inside an island, ground enemies lacked gravity, and restarting could duplicate
 points. Those findings became fixes and permanent tests.
 
+Building the bot taught the same lesson from the other side. Its first plans
+were correct in the simulator and failed in the real game: inputs arrived a
+frame late, jumps relied on the last instant of coyote time, and the brief
+freeze on each stomp left the bot with a stale idea of where enemies were.
+The fixes were to plan with safety margins, read inputs at the right moment,
+and compare the plan with reality before every decision, replanning on drift.
+After that it cleared levels 1–3 in nine runs out of nine without losing a life.
+
 <details>
 <summary><strong>Architecture</strong></summary>
 
@@ -171,9 +188,8 @@ against the same physics constants used at runtime.
 - 61 automated tests cover saves, resets, jump calculations, authored maps,
   autotiling, the simulator and solver, attempt lifecycle, HUD state, and
   overlay transitions.
-- Version 1.0 was played start to finish by hand. Levels 6–10 changed in 1.1;
-  each new mechanic was exercised in the browser, but those levels have not
-  yet been replayed end to end.
+- Version 1.1 has been played start to finish by hand, including the reworked
+  levels 6–10.
 - Pull requests run lint, production build, tests, and map-drift checks.
 - Pushes to `main` deploy the verified build to GitHub Pages.
 
