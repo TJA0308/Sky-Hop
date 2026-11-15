@@ -1,6 +1,6 @@
 {
   "name": "sky-hop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A ten-level floating-island platformer with procedural skies, built with Phaser 3 and Vite.",
   "license": "MIT",
   "homepage": "https://tja0308.github.io/Sky-Hop/",
@@ -17,9 +17,10 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/generate-levels.mjs && node scripts/validate-levels.mjs && vite",
-    "build": "node scripts/generate-levels.mjs && node scripts/validate-levels.mjs && vite build",
+    "build": "node scripts/generate-levels.mjs && node scripts/validate-levels.mjs && node scripts/solve-levels.mjs && vite build",
     "preview": "vite preview",
     "validate-levels": "node scripts/validate-levels.mjs",
+    "solve-levels": "node scripts/solve-levels.mjs",
     "test": "vitest run",
     "lint": "eslint ."
   },
